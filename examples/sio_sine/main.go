@@ -53,8 +53,6 @@ func realMain() {
 		fmt.Printf("Have %s = %t\n", b, b.Have())
 	}
 
-	s.ForceDeviceScan()
-
 	s.FlushEvents()
 
 	defaultInputDeviceIndex := s.DefaultInputDeviceIndex()
@@ -132,11 +130,18 @@ func realMain() {
 		}
 	})
 
-	//	outstream->write_callback = write_callback;
-	layout := soundio.ChannelLayoutGetBuiltin(0)
+	layout := device.GetCurrentLayout()
 	outStream.SetLayout(layout)
+	fmt.Printf("    Layout Error = %s\n", outStream.GetLayoutError())
+	fmt.Printf("    Layout Name = %s\n", layout.GetName())
+	fmt.Printf("    Layout Detect Builtin = %t\n", layout.DetectBuiltin())
 
-	_ = outStream.Open()
+	err = outStream.Open()
+	if err != nil {
+		fmt.Printf("error opening: %s\n", err)
+		exitCode = 1
+		return
+	}
 	defer outStream.Destroy()
 
 	fmt.Printf("    Name = %s\n", outStream.GetName())
@@ -147,8 +152,6 @@ func realMain() {
 	fmt.Printf("    Format = %s\n", outStream.GetFormat())
 	fmt.Printf("    Volume = %f\n", outStream.GetVolume())
 	fmt.Printf("    NonTerminalHint = %t\n", outStream.GetNonTerminalHint())
-	fmt.Printf("    LayoutError = %s\n", outStream.GetLayoutError())
-	fmt.Printf("    Layout Name = %s\n", outStream.GetLayout().GetName())
 	fmt.Printf("    Channel Count = %d\n", layout.GetChannelCount())
 	fmt.Println("    Channels")
 	channels := layout.GetChannels()
@@ -157,7 +160,12 @@ func realMain() {
 		fmt.Printf("      Channel ID = %d, Name = %s\n", (*channels)[i], (*channels)[i])
 	}
 
-	outStream.Start()
+	err = outStream.Start()
+	if err != nil {
+		fmt.Printf("error opening: %s\n", err)
+		exitCode = 1
+		return
+	}
 
 	for {
 		s.WaitEvents()
