@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2019 Zenichi Amano
+ *
+ * This file is part of libsoundio, which is MIT licensed.
+ * See http://opensource.org/licenses/MIT
+ */
+
 package soundio
 
 /*
@@ -7,7 +14,6 @@ package soundio
 import "C"
 import "unsafe"
 
-// ChannelID ...
 type ChannelID uint32
 
 const (
@@ -57,9 +63,9 @@ const (
 	ChannelIDAmbisonicY = C.SoundIoChannelIdAmbisonicY
 	ChannelIDAmbisonicZ = C.SoundIoChannelIdAmbisonicZ
 
-	// ChannelIDXyX ... X of X-Y Recording
+	// ChannelIDXyX is X of X-Y Recording
 	ChannelIDXyX = C.SoundIoChannelIdXyX
-	// ChannelIDXyY ... Y of X-Y Recording
+	// ChannelIDXyY is Y of X-Y Recording
 	ChannelIDXyY = C.SoundIoChannelIdXyY
 
 	ChannelIDHeadphonesLeft   = C.SoundIoChannelIdHeadphonesLeft
@@ -96,6 +102,7 @@ func (c ChannelID) String() string {
 
 // functions
 
+// ParseChannelID returns ChannelID from string.
 func ParseChannelID(str string) ChannelID {
 	cstr := C.CString(str)
 	defer C.free(unsafe.Pointer(cstr))

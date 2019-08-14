@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2019 Zenichi Amano
+ *
+ * This file is part of libsoundio, which is MIT licensed.
+ * See http://opensource.org/licenses/MIT
+ */
+
 package soundio
 
 /*
@@ -40,22 +47,29 @@ const (
 	ChannelLayoutIDOctagonal                       = C.SoundIoChannelLayoutIdOctagonal
 )
 
+// ChannelLayoutBuiltinCount returns the number of builtin channel layouts.
+func ChannelLayoutBuiltinCount() int {
+	return int(C.soundio_channel_layout_builtin_count())
+}
+
+// ChannelLayoutGetBuiltin returns a builtin channel layout.
+// 0 <= `index` < ChannelLayoutBuiltinCount
 func ChannelLayoutGetBuiltin(index ChannelLayoutID) *ChannelLayout {
 	return &ChannelLayout{
 		ptr: C.soundio_channel_layout_get_builtin(C.int(index)),
 	}
 }
 
+// ChannelLayoutGetDefault returns the default builtin channel layout for the given number of channels.
 func ChannelLayoutGetDefault(channelCount int) *ChannelLayout {
 	return &ChannelLayout{
 		ptr: C.soundio_channel_layout_get_default(C.int(channelCount)),
 	}
 }
 
-func ChannelLayoutBuiltinCount() int {
-	return int(C.soundio_channel_layout_builtin_count())
-}
-
+// BestMatchingLayout returns NULL if none matches.
+// Iterates over preferredLayouts. Returns the first channel layout in
+// preferredLayouts which matches one of the channel layouts in availableLayouts.
 func BestMatchingLayout(preferredLayouts []ChannelLayout, availableLayouts []ChannelLayout) *ChannelLayout {
 	preferredLayoutCount := len(preferredLayouts)
 	preferredLayoutsPtr := make([]C.struct_SoundIoChannelLayout, preferredLayoutCount)
@@ -76,14 +90,17 @@ func BestMatchingLayout(preferredLayouts []ChannelLayout, availableLayouts []Cha
 
 // fields
 
+// GetName returns channel layout name.
 func (l *ChannelLayout) GetName() string {
 	return C.GoString(l.ptr.name)
 }
 
+// GetChannelCount returns channel count.
 func (l *ChannelLayout) GetChannelCount() int {
 	return int(l.ptr.channel_count)
 }
 
+// GetChannels returns list of channelID.
 func (l *ChannelLayout) GetChannels() *[]ChannelID {
 	channels := make([]ChannelID, MaxChannels)
 	for i := range channels {
@@ -94,18 +111,24 @@ func (l *ChannelLayout) GetChannels() *[]ChannelID {
 
 // functions
 
+// FindChannel returns the index of `channel` in `layout`, or `-1` if not found.
 func (l *ChannelLayout) FindChannel(channel ChannelID) int {
 	return int(C.soundio_channel_layout_find_channel(l.ptr, uint32(channel)))
 }
 
+// DetectBuiltin returns whether it found a match.
+// Populates the name field of layout if it matches a builtin one.
 func (l *ChannelLayout) DetectBuiltin() bool {
 	return bool(C.soundio_channel_layout_detect_builtin(l.ptr))
 }
 
+// Equal returns whether the channel count field and each channel id matches in
+// the supplied channel layouts.
 func (l *ChannelLayout) Equal(o *ChannelLayout) bool {
 	return bool(C.soundio_channel_layout_equal(l.ptr, o.ptr))
 }
 
+// SortChannelLayouts sorts by channel count, descending.
 func (l *ChannelLayout) SortChannelLayouts(layoutCount int) {
 	C.soundio_sort_channel_layouts(l.ptr, C.int(layoutCount))
 }
