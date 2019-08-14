@@ -5,42 +5,42 @@ package soundio
 */
 import "C"
 
-type ChannelLayoutId uint32
+type ChannelLayoutID uint32
 
 type ChannelLayout struct {
 	ptr *C.struct_SoundIoChannelLayout
 }
 
 const (
-	ChannelLayoutIdMono            ChannelLayoutId = C.SoundIoChannelLayoutIdMono
-	ChannelLayoutIdStereo                          = C.SoundIoChannelLayoutIdStereo
-	ChannelLayoutId2Point1                         = C.SoundIoChannelLayoutId2Point1
-	ChannelLayoutId3Point0                         = C.SoundIoChannelLayoutId3Point0
-	ChannelLayoutId3Point0Back                     = C.SoundIoChannelLayoutId3Point0Back
-	ChannelLayoutId3Point1                         = C.SoundIoChannelLayoutId3Point1
-	ChannelLayoutId4Point0                         = C.SoundIoChannelLayoutId4Point0
-	ChannelLayoutIdQuad                            = C.SoundIoChannelLayoutIdQuad
-	ChannelLayoutIdQuadSide                        = C.SoundIoChannelLayoutIdQuadSide
-	ChannelLayoutId4Point1                         = C.SoundIoChannelLayoutId4Point1
-	ChannelLayoutId5Point0Back                     = C.SoundIoChannelLayoutId5Point0Back
-	ChannelLayoutId5Point0Side                     = C.SoundIoChannelLayoutId5Point0Side
-	ChannelLayoutId5Point1                         = C.SoundIoChannelLayoutId5Point1
-	ChannelLayoutId5Point1Back                     = C.SoundIoChannelLayoutId5Point1Back
-	ChannelLayoutId6Point0Side                     = C.SoundIoChannelLayoutId6Point0Side
-	ChannelLayoutId6Point0Front                    = C.SoundIoChannelLayoutId6Point0Front
-	ChannelLayoutIdHexagonal                       = C.SoundIoChannelLayoutIdHexagonal
-	ChannelLayoutId6Point1                         = C.SoundIoChannelLayoutId6Point1
-	ChannelLayoutId6Point1Back                     = C.SoundIoChannelLayoutId6Point1Back
-	ChannelLayoutId6Point1Front                    = C.SoundIoChannelLayoutId6Point1Front
-	ChannelLayoutId7Point0                         = C.SoundIoChannelLayoutId7Point0
-	ChannelLayoutId7Point0Front                    = C.SoundIoChannelLayoutId7Point0Front
-	ChannelLayoutId7Point1                         = C.SoundIoChannelLayoutId7Point1
-	ChannelLayoutId7Point1Wide                     = C.SoundIoChannelLayoutId7Point1Wide
-	ChannelLayoutId7Point1WideBack                 = C.SoundIoChannelLayoutId7Point1WideBack
-	ChannelLayoutIdOctagonal                       = C.SoundIoChannelLayoutIdOctagonal
+	ChannelLayoutIDMono            ChannelLayoutID = C.SoundIoChannelLayoutIdMono
+	ChannelLayoutIDStereo                          = C.SoundIoChannelLayoutIdStereo
+	ChannelLayoutID2Point1                         = C.SoundIoChannelLayoutId2Point1
+	ChannelLayoutID3Point0                         = C.SoundIoChannelLayoutId3Point0
+	ChannelLayoutID3Point0Back                     = C.SoundIoChannelLayoutId3Point0Back
+	ChannelLayoutID3Point1                         = C.SoundIoChannelLayoutId3Point1
+	ChannelLayoutID4Point0                         = C.SoundIoChannelLayoutId4Point0
+	ChannelLayoutIDQuad                            = C.SoundIoChannelLayoutIdQuad
+	ChannelLayoutIDQuadSide                        = C.SoundIoChannelLayoutIdQuadSide
+	ChannelLayoutID4Point1                         = C.SoundIoChannelLayoutId4Point1
+	ChannelLayoutID5Point0Back                     = C.SoundIoChannelLayoutId5Point0Back
+	ChannelLayoutID5Point0Side                     = C.SoundIoChannelLayoutId5Point0Side
+	ChannelLayoutID5Point1                         = C.SoundIoChannelLayoutId5Point1
+	ChannelLayoutID5Point1Back                     = C.SoundIoChannelLayoutId5Point1Back
+	ChannelLayoutID6Point0Side                     = C.SoundIoChannelLayoutId6Point0Side
+	ChannelLayoutID6Point0Front                    = C.SoundIoChannelLayoutId6Point0Front
+	ChannelLayoutIDHexagonal                       = C.SoundIoChannelLayoutIdHexagonal
+	ChannelLayoutID6Point1                         = C.SoundIoChannelLayoutId6Point1
+	ChannelLayoutID6Point1Back                     = C.SoundIoChannelLayoutId6Point1Back
+	ChannelLayoutID6Point1Front                    = C.SoundIoChannelLayoutId6Point1Front
+	ChannelLayoutID7Point0                         = C.SoundIoChannelLayoutId7Point0
+	ChannelLayoutID7Point0Front                    = C.SoundIoChannelLayoutId7Point0Front
+	ChannelLayoutID7Point1                         = C.SoundIoChannelLayoutId7Point1
+	ChannelLayoutID7Point1Wide                     = C.SoundIoChannelLayoutId7Point1Wide
+	ChannelLayoutID7Point1WideBack                 = C.SoundIoChannelLayoutId7Point1WideBack
+	ChannelLayoutIDOctagonal                       = C.SoundIoChannelLayoutIdOctagonal
 )
 
-func ChannelLayoutGetBuiltin(index int) *ChannelLayout {
+func ChannelLayoutGetBuiltin(index ChannelLayoutID) *ChannelLayout {
 	return &ChannelLayout{
 		ptr: C.soundio_channel_layout_get_builtin(C.int(index)),
 	}

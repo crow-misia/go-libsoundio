@@ -96,7 +96,7 @@ func (c ChannelID) String() string {
 
 // functions
 
-func ParseChannelId(str string) ChannelID {
+func ParseChannelID(str string) ChannelID {
 	cstr := C.CString(str)
 	defer C.free(unsafe.Pointer(cstr))
 	return ChannelID(uint32(C.soundio_parse_channel_id(cstr, C.int(len(str)))))

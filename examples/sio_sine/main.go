@@ -26,8 +26,8 @@ func realMain() {
 
 	fmt.Printf("libsound Version = %s\n", soundio.Version())
 	fmt.Printf("Front Center Channel Name = %s\n", soundio.ChannelID(soundio.ChannelIDFrontCenter))
-	fmt.Printf("Front Left Channel ID = %d\n", soundio.ParseChannelId("Front Left"))
-	fmt.Printf("front-right Channel ID = %d\n", soundio.ParseChannelId("front-right"))
+	fmt.Printf("Front Left Channel ID = %d\n", soundio.ParseChannelID("Front Left"))
+	fmt.Printf("front-right Channel ID = %d\n", soundio.ParseChannelID("front-right"))
 	fmt.Printf("Channel Max Count = %d\n", soundio.MaxChannels)
 	fmt.Printf("Channel Layout Builtin Count = %d\n", soundio.ChannelLayoutBuiltinCount())
 
