@@ -140,6 +140,22 @@ func Create() *SoundIo {
 	return io
 }
 
+// fields
+
+func (s *SoundIo) SetOnDevicesChange(callback func(*SoundIo)) {
+	s.onDevicesChange = callback
+}
+
+func (s *SoundIo) SetOnBackendDisconnect(callback func(*SoundIo, error)) {
+	s.onBackendDisconnect = callback
+}
+
+func (s *SoundIo) SetOnEventsSignal(callback func(*SoundIo)) {
+	s.onEventsSignal = callback
+}
+
+// functions
+
 // Destroy releases resources.
 func (s *SoundIo) Destroy() {
 	if s.ptr != 0 {
