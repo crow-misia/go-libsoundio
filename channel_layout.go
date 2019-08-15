@@ -72,17 +72,17 @@ func ChannelLayoutGetDefault(channelCount int) *ChannelLayout {
 func BestMatchingLayout(preferredLayouts []ChannelLayout, availableLayouts []ChannelLayout) *ChannelLayout {
 	size := C.sizeof_struct_SoundIoChannelLayout
 	preferredLayoutCount := len(preferredLayouts)
-	preferredBuffer := C.malloc(C.ulong(size * preferredLayoutCount))
+	preferredBuffer := C.malloc(C.size_t(size * preferredLayoutCount))
 	defer C.free(preferredBuffer)
 	for i := 0; i < preferredLayoutCount; i++ {
-		C.memcpy(unsafe.Pointer(uintptr(preferredBuffer)+uintptr(i*size)), unsafe.Pointer(preferredLayouts[i].ptr), C.ulong(size))
+		C.memcpy(unsafe.Pointer(uintptr(preferredBuffer)+uintptr(i*size)), unsafe.Pointer(preferredLayouts[i].ptr), C.size_t(size))
 	}
 
 	availableLayoutCount := len(availableLayouts)
-	availableBuffer := C.malloc(C.ulong(size * preferredLayoutCount))
+	availableBuffer := C.malloc(C.size_t(size * preferredLayoutCount))
 	defer C.free(availableBuffer)
 	for i := 0; i < availableLayoutCount; i++ {
-		C.memcpy(unsafe.Pointer(uintptr(availableBuffer)+uintptr(i*size)), unsafe.Pointer(availableLayouts[i].ptr), C.ulong(size))
+		C.memcpy(unsafe.Pointer(uintptr(availableBuffer)+uintptr(i*size)), unsafe.Pointer(availableLayouts[i].ptr), C.size_t(size))
 	}
 
 	return createChannelLayout(C.soundio_best_matching_channel_layout(
