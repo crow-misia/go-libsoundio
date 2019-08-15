@@ -11,10 +11,9 @@ package soundio
 #include <soundio/soundio.h>
 */
 import "C"
-import "unsafe"
 
 type ChannelAreas struct {
-	ptr          *C.struct_SoundIoChannelArea
+	ptr          uintptr
 	channelCount int
 	frameCount   int
 }
@@ -31,8 +30,8 @@ func (a *ChannelAreas) GetFrameCount() int {
 
 // GetArea returns ChannelArea.
 func (a *ChannelAreas) GetArea(channel int) *ChannelArea {
-	size := unsafe.Sizeof(*a.ptr)
+	size := C.sizeof_struct_SoundIoChannelArea
 	return &ChannelArea{
-		ptr: (*C.struct_SoundIoChannelArea)(unsafe.Pointer(uintptr(unsafe.Pointer(a.ptr)) + uintptr(channel)*size)),
+		ptr: a.ptr + uintptr(channel*size),
 	}
 }

@@ -40,6 +40,10 @@ func realMain() {
 	s := soundio.Create()
 	defer s.Destroy()
 
+	fmt.Printf("App Name = %s\n", s.GetAppName())
+	s.SetAppName("FugaHoge")
+	fmt.Printf("Changed App Name = %s\n", s.GetAppName())
+
 	backendCount := s.BackendCount()
 	fmt.Printf("Backend Count = %d\n", backendCount)
 	for i := 0; i < backendCount; i++ {
@@ -81,8 +85,10 @@ func realMain() {
 	for _, f := range device.GetFormats() {
 		fmt.Printf("    %s\n", f)
 	}
-	sampleRateRange := device.GetSampleRates()
-	fmt.Printf("  SampleRate = %d ... %d\n", sampleRateRange.GetMin(), sampleRateRange.GetMax())
+	fmt.Println("  SampleRates")
+	for _, sampleRate := range device.GetSampleRates() {
+		fmt.Printf("    %d ... %d\n", sampleRate.GetMin(), sampleRate.GetMax())
+	}
 	fmt.Printf("  SampleRate Count = %d\n", device.GetSampleRateCount())
 	fmt.Printf("  SampleRate Current = %d\n", device.GetSampleRateCurrent())
 	fmt.Printf("  Software Latency Min = %f\n", device.GetSoftwareLatencyMin())
@@ -163,7 +169,7 @@ func realMain() {
 	channels := layout.GetChannels()
 	channelCount := layout.GetChannelCount()
 	for i := 0; i < channelCount; i++ {
-		fmt.Printf("      Channel ID = %d, Name = %s\n", (*channels)[i], (*channels)[i])
+		fmt.Printf("      Channel ID = %d, Name = %s\n", channels[i], channels[i])
 	}
 
 	err = outStream.Start()

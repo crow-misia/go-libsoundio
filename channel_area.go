@@ -14,18 +14,24 @@ import "C"
 import "unsafe"
 
 type ChannelArea struct {
-	ptr *C.struct_SoundIoChannelArea
+	ptr uintptr
 }
 
 // fields
 
 // GetBuffer returns base address of buffer.
 func (a *ChannelArea) GetBuffer() uintptr {
-	return uintptr(unsafe.Pointer(a.ptr.ptr))
+	p := a.getPointer()
+	return uintptr(unsafe.Pointer(p.ptr))
 }
 
 // GetStep returns ow many bytes it takes to get from the beginning of one sample to
 // the beginning of the next sample.
 func (a *ChannelArea) GetStep() int {
-	return int(a.ptr.step)
+	p := a.getPointer()
+	return int(p.step)
+}
+
+func (a *ChannelArea) getPointer() *C.struct_SoundIoChannelArea {
+	return (*C.struct_SoundIoChannelArea)(unsafe.Pointer(a.ptr))
 }

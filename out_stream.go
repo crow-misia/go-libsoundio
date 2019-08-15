@@ -10,13 +10,14 @@ package soundio
 /*
 #include <soundio/soundio.h>
 #include <stdlib.h>
+#include <string.h>
 */
 import "C"
 import "unsafe"
 
 type OutStream struct {
-	ptr               *C.struct_SoundIoOutStream
-	namePtr           *C.char
+	ptr               uintptr
+	device            *Device
 	writeCallback     func(*OutStream, int, int)
 	underflowCallback func(*OutStream)
 	errorCallback     func(*OutStream, error)
@@ -26,98 +27,109 @@ type OutStream struct {
 
 // GetDevice returns device to which the stream belongs.
 func (s *OutStream) GetDevice() *Device {
-	return &Device{
-		ptr: s.ptr.device,
-	}
+	return s.device
 }
 
 // GetFormat returns format of stream.
 func (s *OutStream) GetFormat() Format {
-	return Format(s.ptr.format)
+	p := s.getPointer()
+	return Format(p.format)
 }
 
 // SetFormat sets format of stream.
 func (s *OutStream) SetFormat(format Format) {
-	s.ptr.format = uint32(format)
+	p := s.getPointer()
+	p.format = uint32(format)
 }
 
 // GetSampleRate returns sample rate of stream.
 func (s *OutStream) GetSampleRate() int {
-	return int(s.ptr.sample_rate)
+	p := s.getPointer()
+	return int(p.sample_rate)
 }
 
 // SetSampleRate sets sample rate of stream.
 func (s *OutStream) SetSampleRate(sampleRate int) {
-	s.ptr.sample_rate = C.int(sampleRate)
+	p := s.getPointer()
+	p.sample_rate = C.int(sampleRate)
 }
 
 // GetLayout returns layout of stream.
 func (s *OutStream) GetLayout() *ChannelLayout {
-	return &ChannelLayout{
-		ptr: &(s.ptr.layout),
-	}
+	p := s.getPointer()
+	return createChannelLayout(&p.layout)
 }
 
 // SetLayout sets layout of stream.
 func (s *OutStream) SetLayout(layout *ChannelLayout) {
-	s.ptr.layout = *(layout.ptr)
+	p := s.getPointer()
+	C.memcpy(unsafe.Pointer(&p.layout), unsafe.Pointer(layout.ptr), C.sizeof_struct_SoundIoChannelLayout)
 }
 
 // GetSoftwareLatency returns software latency of stream.
 func (s *OutStream) GetSoftwareLatency() float64 {
-	return float64(s.ptr.software_latency)
+	p := s.getPointer()
+	return float64(p.software_latency)
 }
 
 // SetSoftwareLatency sets software latency of stream.
 func (s *OutStream) SetSoftwareLatency(latency float64) {
-	s.ptr.software_latency = C.double(latency)
+	p := s.getPointer()
+	p.software_latency = C.double(latency)
 }
 
 // GetVolume returns volume of stream.
 func (s *OutStream) GetVolume() float32 {
-	return float32(s.ptr.volume)
+	p := s.getPointer()
+	return float32(p.volume)
 }
 
 // SetVolume sets volume of stream.
 func (s *OutStream) SetVolume(volume float64) error {
-	return convertToError(C.soundio_outstream_set_volume(s.ptr, C.double(volume)))
+	return convertToError(C.soundio_outstream_set_volume(s.getPointer(), C.double(volume)))
 }
 
 // GetName returns name of stream.
 func (s *OutStream) GetName() string {
-	return C.GoString(s.ptr.name)
+	p := s.getPointer()
+	return C.GoString(p.name)
 }
 
 // SetName sets name of stream.
 func (s *OutStream) SetName(name string) {
-	if s.namePtr != nil {
-		C.free(unsafe.Pointer(s.namePtr))
+	p := s.getPointer()
+	if p.name != nil {
+		C.free(unsafe.Pointer(p.name))
 	}
-	s.ptr.name = C.CString(name)
+	p.name = C.CString(name)
 }
 
 // GetNonTerminalHint returns hint that this output stream is nonterminal.
 // This is used by JACK and it means that the output stream data originates from an input
 // stream. Defaults to `false`.
 func (s *OutStream) GetNonTerminalHint() bool {
-	return bool(s.ptr.non_terminal_hint)
+	p := s.getPointer()
+	return bool(p.non_terminal_hint)
 }
 
 // GetBytesPerFrame returns bytes per frame.
 func (s *OutStream) GetBytesPerFrame() int {
-	return int(s.ptr.bytes_per_frame)
+	p := s.getPointer()
+	return int(p.bytes_per_frame)
 }
 
 // GetBytesPerSample returns bytes per sample.
 func (s *OutStream) GetBytesPerSample() int {
-	return int(s.ptr.bytes_per_sample)
+	p := s.getPointer()
+	return int(p.bytes_per_sample)
 }
 
 // GetLayoutError returns error If setting the channel layout fails for some reason.
 // Possible error:
 // * SoundIoErrorIncompatibleDevice
 func (s *OutStream) GetLayoutError() error {
-	return convertToError(s.ptr.layout_error)
+	p := s.getPointer()
+	return convertToError(p.layout_error)
 }
 
 // SetWriteCallback sets WriteCallback.
@@ -139,16 +151,10 @@ func (s *OutStream) SetErrorCallback(callback func(stream *OutStream, err error)
 
 // Destroy releases resources.
 func (s *OutStream) Destroy() {
-	if s.namePtr != nil {
-		C.free(unsafe.Pointer(s.namePtr))
+	if s.ptr != 0 {
+		C.soundio_outstream_destroy(s.getPointer())
+		s.ptr = 0
 	}
-	s.namePtr = nil
-
-	if s.ptr != nil {
-		s.ptr.userdata = nil
-		C.soundio_outstream_destroy(s.ptr)
-	}
-	s.ptr = nil
 }
 
 // Open opens stream.
@@ -172,13 +178,13 @@ func (s *OutStream) Destroy() {
 // * ErrorIncompatibleDevice - stream parameters requested are not
 //   compatible with the chosen device.
 func (s *OutStream) Open() error {
-	return convertToError(C.soundio_outstream_open(s.ptr))
+	return convertToError(C.soundio_outstream_open(s.getPointer()))
 }
 
 // Start starts playback.
 // After you call this function, WriteCallback will be called.
 func (s *OutStream) Start() error {
-	return convertToError(C.soundio_outstream_start(s.ptr))
+	return convertToError(C.soundio_outstream_start(s.getPointer()))
 }
 
 // BeginWrite called when you are ready to begin writing to the device buffer.
@@ -186,11 +192,11 @@ func (s *OutStream) BeginWrite(frameCount *int) (*ChannelAreas, error) {
 	var ptrs *C.struct_SoundIoChannelArea
 
 	nativeFrameCount := C.int(*frameCount)
-	err := convertToError(C.soundio_outstream_begin_write(s.ptr, &ptrs, &nativeFrameCount))
+	err := convertToError(C.soundio_outstream_begin_write(s.getPointer(), &ptrs, &nativeFrameCount))
 	*frameCount = int(nativeFrameCount)
 
 	return &ChannelAreas{
-		ptr:          ptrs,
+		ptr:          uintptr(unsafe.Pointer(ptrs)),
 		channelCount: s.GetLayout().GetChannelCount(),
 		frameCount:   *frameCount,
 	}, err
@@ -198,23 +204,27 @@ func (s *OutStream) BeginWrite(frameCount *int) (*ChannelAreas, error) {
 
 // EndWrite commits the write that you began with BeginWrite.
 func (s *OutStream) EndWrite() error {
-	return convertToError(C.soundio_outstream_end_write(s.ptr))
+	return convertToError(C.soundio_outstream_end_write(s.getPointer()))
 }
 
 // ClearBuffer clears the output stream buffer.
 func (s *OutStream) ClearBuffer() error {
-	return convertToError(C.soundio_outstream_clear_buffer(s.ptr))
+	return convertToError(C.soundio_outstream_clear_buffer(s.getPointer()))
 }
 
 // Pause pauses the stream If the underlying backend and device support pausing.
 func (s *OutStream) Pause(pause bool) error {
-	return convertToError(C.soundio_outstream_pause(s.ptr, C.bool(pause)))
+	return convertToError(C.soundio_outstream_pause(s.getPointer(), C.bool(pause)))
 }
 
 // GetLatency returns the total number of seconds that the next frame written after the
 // last frame written with EndWrite will take to become audible.
 func (s *OutStream) GetLatency(outLatency float64) (float64, error) {
 	latency := C.double(outLatency)
-	err := convertToError(C.soundio_outstream_get_latency(s.ptr, &latency))
+	err := convertToError(C.soundio_outstream_get_latency(s.getPointer(), &latency))
 	return float64(latency), err
+}
+
+func (s *OutStream) getPointer() *C.struct_SoundIoOutStream {
+	return (*C.struct_SoundIoOutStream)(unsafe.Pointer(s.ptr))
 }

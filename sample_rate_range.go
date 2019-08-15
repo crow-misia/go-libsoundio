@@ -11,19 +11,26 @@ package soundio
 #include <soundio/soundio.h>
 */
 import "C"
+import "unsafe"
 
 type SampleRateRange struct {
-	ptr *C.struct_SoundIoSampleRateRange
+	ptr uintptr
 }
 
 // fields
 
 // GetMin returns sample rate minimal.
 func (r *SampleRateRange) GetMin() int {
-	return int(r.ptr.min)
+	p := r.getPointer()
+	return int(p.min)
 }
 
 // GetMax returns sample rate maximal.
 func (r *SampleRateRange) GetMax() int {
-	return int(r.ptr.max)
+	p := r.getPointer()
+	return int(p.max)
+}
+
+func (r *SampleRateRange) getPointer() *C.struct_SoundIoSampleRateRange {
+	return (*C.struct_SoundIoSampleRateRange)(unsafe.Pointer(r.ptr))
 }
