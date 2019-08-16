@@ -160,7 +160,9 @@ func (s *SoundIo) SetOnEventsSignal(callback func(*SoundIo)) {
 func (s *SoundIo) Destroy() {
 	if s.ptr != 0 {
 		p := s.getPointer()
-		C.free(unsafe.Pointer(p.app_name))
+		if s.appNamePtr != 0 {
+			C.free(unsafe.Pointer(s.appNamePtr))
+		}
 		C.soundio_destroy(p)
 		s.ptr = 0
 	}
