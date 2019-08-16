@@ -136,6 +136,7 @@ func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCoun
 
 func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isRaw bool, outfile string) error {
 	_, cancelParent := context.WithCancel(ctx)
+	defer cancelParent()
 
 	s := soundio.Create()
 	defer s.Destroy()

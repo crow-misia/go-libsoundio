@@ -197,7 +197,7 @@ func (s *InStream) EndRead() error {
 }
 
 // Pause pauses the stream and prevents ReadCallback from being called
-// If the underyling device supports pausing.
+// If the underlying device supports pausing.
 func (s *InStream) Pause(pause bool) error {
 	return convertToError(C.soundio_instream_pause(s.getPointer(), C.bool(pause)))
 }
