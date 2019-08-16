@@ -257,13 +257,6 @@ func (s *SoundIo) DefaultOutputDeviceIndex() int {
 	return int(C.soundio_default_output_device_index(s.getPointer()))
 }
 
-// RingBufferCreate creates a ring buffer is a single-reader single-writer lock-free fixed-size queue.
-func (s *SoundIo) RingBufferCreate(requestedCapacity int) *RingBuffer {
-	return &RingBuffer{
-		ptr: uintptr(unsafe.Pointer(C.soundio_ring_buffer_create(s.getPointer(), C.int(requestedCapacity)))),
-	}
-}
-
 func (s *SoundIo) getPointer() *C.struct_SoundIo {
 	return (*C.struct_SoundIo)(unsafe.Pointer(s.ptr))
 }

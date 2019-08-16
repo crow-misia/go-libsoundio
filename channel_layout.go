@@ -69,25 +69,11 @@ func ChannelLayoutGetDefault(channelCount int) *ChannelLayout {
 // BestMatchingLayout returns NULL if none matches.
 // Iterates over preferredLayouts. Returns the first channel layout in
 // preferredLayouts which matches one of the channel layouts in availableLayouts.
-func BestMatchingLayout(preferredLayouts []ChannelLayout, availableLayouts []ChannelLayout) *ChannelLayout {
-	size := C.sizeof_struct_SoundIoChannelLayout
-	preferredLayoutCount := len(preferredLayouts)
-	preferredBuffer := C.malloc(C.size_t(size * preferredLayoutCount))
-	defer C.free(preferredBuffer)
-	for i := 0; i < preferredLayoutCount; i++ {
-		C.memcpy(unsafe.Pointer(uintptr(preferredBuffer)+uintptr(i*size)), unsafe.Pointer(preferredLayouts[i].ptr), C.size_t(size))
-	}
+func BestMatchingLayout(device1 *Device, device2 *Device) *ChannelLayout {
+	device1Ptr := device1.getPointer()
+	device2Ptr := device1.getPointer()
 
-	availableLayoutCount := len(availableLayouts)
-	availableBuffer := C.malloc(C.size_t(size * preferredLayoutCount))
-	defer C.free(availableBuffer)
-	for i := 0; i < availableLayoutCount; i++ {
-		C.memcpy(unsafe.Pointer(uintptr(availableBuffer)+uintptr(i*size)), unsafe.Pointer(availableLayouts[i].ptr), C.size_t(size))
-	}
-
-	return createChannelLayout(C.soundio_best_matching_channel_layout(
-		(*C.struct_SoundIoChannelLayout)(preferredBuffer), C.int(preferredLayoutCount),
-		(*C.struct_SoundIoChannelLayout)(availableBuffer), C.int(availableLayoutCount)))
+	return createChannelLayout(C.soundio_best_matching_channel_layout(device1Ptr.layouts, device1Ptr.layout_count, device2Ptr.layouts, device2Ptr.layout_count))
 }
 
 // fields

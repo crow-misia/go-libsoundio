@@ -34,6 +34,23 @@ const (
 	FormatFloat32BE        = C.SoundIoFormatFloat32BE // Float 32 bit Big Endian, Range -1.0 to 1.0
 	FormatFloat64LE        = C.SoundIoFormatFloat64LE // Float 64 bit Little Endian, Range -1.0 to 1.0
 	FormatFloat64BE        = C.SoundIoFormatFloat64BE // Float 64 bit Big Endian, Range -1.0 to 1.0
+
+	FormatS16FE     = C.SoundIoFormatS16NE     // Signed 16 bit Native Endian
+	FormatS16NE     = C.SoundIoFormatS16FE     // Signed 16 bit Foreign Endian
+	FormatU16FE     = C.SoundIoFormatU16NE     // Unsigned 16 bit Native Endian
+	FormatU16NE     = C.SoundIoFormatU16FE     // Unsigned 16 bit Foreign Endian
+	FormatS24FE     = C.SoundIoFormatS24NE     // Signed 24 bit Native Endian using low three bytes in 32-bit word
+	FormatS24NE     = C.SoundIoFormatS24FE     // Signed 24 bit Foreign Endian using low three bytes in 32-bit word
+	FormatU24FE     = C.SoundIoFormatU24NE     // Unsigned 24 bit Native Endian using low three bytes in 32-bit word
+	FormatU24NE     = C.SoundIoFormatU24FE     // Unsigned 24 bit Foreign Endian using low three bytes in 32-bit word
+	FormatS32FE     = C.SoundIoFormatS32NE     // Signed 32 bit Native Endian
+	FormatS32NE     = C.SoundIoFormatS32FE     // Signed 32 bit Foreign Endian
+	FormatU32FE     = C.SoundIoFormatU32NE     // Unsigned 32 bit Native Endian
+	FormatU32NE     = C.SoundIoFormatU32FE     // Unsigned 32 bit Foreign Endian
+	FormatFloat32FE = C.SoundIoFormatFloat32NE // Float 32 bit Native Endian, Range -1.0 to 1.0
+	FormatFloat32NE = C.SoundIoFormatFloat32FE // Float 32 bit Foreign Endian, Range -1.0 to 1.0
+	FormatFloat64NE = C.SoundIoFormatFloat64NE // Float 64 bit Native Endian, Range -1.0 to 1.0
+	FormatFloat64FE = C.SoundIoFormatFloat64FE // Float 64 bit Foreign Endian, Range -1.0 to 1.0
 )
 
 func (f Format) String() string {

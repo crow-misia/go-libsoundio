@@ -7,11 +7,14 @@
 package main
 
 import (
+	"context"
+	"encoding/binary"
 	"fmt"
 	"github.com/crow-misia/go-libsoundio"
 	"math"
 	"os"
-	"unsafe"
+	"os/signal"
+	"syscall"
 )
 
 var exitCode = 0
@@ -20,11 +23,19 @@ var secondsOffset = 0.0
 const PI = 3.1415926535
 
 func main() {
-	realMain()
+	ctx := context.Background()
+	parentCtx := signalContext(ctx)
+	err := realMain(parentCtx)
+	if err != nil {
+		exitCode = 1
+		_, _ = fmt.Fprintln(os.Stderr, err)
+	}
+	parentCtx.Done()
+
 	os.Exit(exitCode)
 }
 
-func realMain() {
+func realMain(ctx context.Context) error {
 	backends := []soundio.Backend{
 		soundio.BackendJack, soundio.BackendPulseAudio, soundio.BackendAlsa,
 		soundio.BackendCoreAudio, soundio.BackendWasapi, soundio.BackendDummy,
@@ -53,9 +64,7 @@ func realMain() {
 
 	err := s.Connect()
 	if err != nil {
-		fmt.Printf("error connecting: %s\n", err)
-		exitCode = 1
-		return
+		return fmt.Errorf("error connecting: %s", err)
 	}
 
 	fmt.Printf("Current Backend Name = %s\n", s.GetCurrentBackend())
@@ -121,14 +130,17 @@ func realMain() {
 
 			pitch := 440.0
 			radiansPerSecond := pitch * 2.0 * PI
+			channelCount := layout.GetChannelCount()
 
 			for frame := 0; frame < frameCount; frame++ {
 				sample := float32(math.Sin((secondsOffset + float64(frame)*secondsPerFrame) * radiansPerSecond))
 
-				for channel := 0; channel < layout.GetChannelCount(); channel++ {
+				for channel := 0; channel < channelCount; channel++ {
 					area := areas.GetArea(channel)
-					ptr := (*float32)(unsafe.Pointer(area.GetBuffer() + uintptr(area.GetStep()*frame)))
-					*ptr = sample
+					buffer := area.GetBuffer()
+					bites := math.Float32bits(sample)
+					step := area.GetStep()
+					binary.LittleEndian.PutUint32(buffer[step*frame:], bites)
 				}
 			}
 
@@ -150,9 +162,7 @@ func realMain() {
 
 	err = outStream.Open()
 	if err != nil {
-		fmt.Printf("error opening: %s\n", err)
-		exitCode = 1
-		return
+		return fmt.Errorf("error opening: %s", err)
 	}
 	defer outStream.Destroy()
 
@@ -174,12 +184,55 @@ func realMain() {
 
 	err = outStream.Start()
 	if err != nil {
-		fmt.Printf("error opening: %s\n", err)
-		exitCode = 1
-		return
+		return fmt.Errorf("error opening: %s", err)
 	}
 
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				break
+			default:
+				s.WaitEvents()
+			}
+		}
+	}()
+
 	for {
-		s.WaitEvents()
+		select {
+		case <-ctx.Done():
+			s.Wakeup()
+			return ctx.Err()
+		}
 	}
+}
+
+func signalContext(ctx context.Context) context.Context {
+	parent, cancelParent := context.WithCancel(ctx)
+	go func() {
+		defer cancelParent()
+
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig,
+			syscall.SIGHUP,
+			syscall.SIGINT,
+			syscall.SIGTERM,
+			syscall.SIGQUIT,
+		)
+		defer signal.Stop(sig)
+
+		select {
+		case <-parent.Done():
+			_, _ = fmt.Fprintln(os.Stderr, "Cancel from parent")
+			return
+		case s := <-sig:
+			switch s {
+			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+				_, _ = fmt.Fprintln(os.Stderr, "Stop!")
+				return
+			}
+		}
+	}()
+
+	return parent
 }

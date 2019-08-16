@@ -32,7 +32,10 @@ static void setOutstreamCallback(struct SoundIoOutStream *outstream) {
 }
 */
 import "C"
-import "unsafe"
+import (
+	"fmt"
+	"unsafe"
+)
 
 type Device struct {
 	ptr uintptr
@@ -253,6 +256,7 @@ func (d *Device) AddReference() {
 
 // RemoveReference is decrements the device's reference count.
 func (d *Device) RemoveReference() {
+	fmt.Println("device destroy")
 	C.soundio_device_unref(d.getPointer())
 }
 

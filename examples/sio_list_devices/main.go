@@ -7,11 +7,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	soundio "github.com/crow-misia/go-libsoundio"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 var exitCode = 0
@@ -32,7 +35,14 @@ func main() {
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)
 	} else {
-		realMain(enumBackend, watchEvents, shortOutput)
+		ctx := context.Background()
+		parentCtx := signalContext(ctx)
+		err := realMain(parentCtx, enumBackend, watchEvents, shortOutput)
+		if err != nil {
+			exitCode = 1
+			_, _ = fmt.Fprintln(os.Stderr, err)
+		}
+		parentCtx.Done()
 	}
 	os.Exit(exitCode)
 }
@@ -54,7 +64,7 @@ func parseBackend(str string) (soundio.Backend, error) {
 	case "wasapi":
 		return soundio.BackendWasapi, nil
 	default:
-		return soundio.BackendNone, fmt.Errorf("Invalid backend: %s\n", str)
+		return soundio.BackendNone, fmt.Errorf("invalid backend: %s", str)
 	}
 }
 
@@ -162,7 +172,7 @@ func listDevices(s *soundio.SoundIo, shortOutput bool) {
 	_, _ = fmt.Fprintf(os.Stderr, "\n%d devices found\n", inputCount+outputCount)
 }
 
-func realMain(backend soundio.Backend, watchEvents bool, shortOutput bool) {
+func realMain(ctx context.Context, backend soundio.Backend, watchEvents bool, shortOutput bool) error {
 	s := soundio.Create()
 	defer s.Destroy()
 
@@ -173,9 +183,7 @@ func realMain(backend soundio.Backend, watchEvents bool, shortOutput bool) {
 		err = s.ConnectBackend(backend)
 	}
 	if err != nil {
-		fmt.Printf("%s\n", err)
-		exitCode = 1
-		return
+		return err
 	}
 
 	if watchEvents {
@@ -183,11 +191,59 @@ func realMain(backend soundio.Backend, watchEvents bool, shortOutput bool) {
 			_, _ = fmt.Fprintln(os.Stderr, "devices changed")
 			listDevices(s, shortOutput)
 		})
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					break
+				default:
+					s.WaitEvents()
+				}
+			}
+		}()
+
 		for {
-			s.WaitEvents()
+			select {
+			case <-ctx.Done():
+				s.Wakeup()
+				return ctx.Err()
+			}
 		}
 	} else {
 		s.FlushEvents()
 		listDevices(s, shortOutput)
 	}
+
+	return nil
+}
+
+func signalContext(ctx context.Context) context.Context {
+	parent, cancelParent := context.WithCancel(ctx)
+	go func() {
+		defer cancelParent()
+
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig,
+			syscall.SIGHUP,
+			syscall.SIGINT,
+			syscall.SIGTERM,
+			syscall.SIGQUIT,
+		)
+		defer signal.Stop(sig)
+
+		select {
+		case <-parent.Done():
+			fmt.Println("Cancel from parent")
+			return
+		case s := <-sig:
+			switch s {
+			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+				fmt.Println("Stop!")
+				return
+			}
+		}
+	}()
+
+	return parent
 }

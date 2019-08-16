@@ -30,8 +30,5 @@ func (a *ChannelAreas) GetFrameCount() int {
 
 // GetArea returns ChannelArea.
 func (a *ChannelAreas) GetArea(channel int) *ChannelArea {
-	size := C.sizeof_struct_SoundIoChannelArea
-	return &ChannelArea{
-		ptr: a.ptr + uintptr(channel*size),
-	}
+	return newChannelArea(a, channel)
 }

@@ -11,27 +11,47 @@ package soundio
 #include <soundio/soundio.h>
 */
 import "C"
-import "unsafe"
+import (
+	"reflect"
+	"unsafe"
+)
 
 type ChannelArea struct {
-	ptr uintptr
+	ptr       uintptr
+	step      int
+	frameSize int
 }
 
 // fields
 
 // GetBuffer returns base address of buffer.
-func (a *ChannelArea) GetBuffer() uintptr {
-	p := a.getPointer()
-	return uintptr(unsafe.Pointer(p.ptr))
+func (a *ChannelArea) GetBuffer() []byte {
+	size := a.frameSize
+
+	sh := &reflect.SliceHeader{
+		Data: a.ptr,
+		Len:  size,
+		Cap:  size,
+	}
+
+	return *(*[]byte)(unsafe.Pointer(sh))
 }
 
 // GetStep returns ow many bytes it takes to get from the beginning of one sample to
 // the beginning of the next sample.
 func (a *ChannelArea) GetStep() int {
-	p := a.getPointer()
-	return int(p.step)
+	return a.step
 }
 
-func (a *ChannelArea) getPointer() *C.struct_SoundIoChannelArea {
-	return (*C.struct_SoundIoChannelArea)(unsafe.Pointer(a.ptr))
+func newChannelArea(areas *ChannelAreas, channel int) *ChannelArea {
+	size := C.sizeof_struct_SoundIoChannelArea
+	ptr := areas.ptr + uintptr(channel*size)
+	area := (*C.struct_SoundIoChannelArea)(unsafe.Pointer(ptr))
+	areaStep := int(area.step)
+
+	return &ChannelArea{
+		ptr:       uintptr(unsafe.Pointer(area.ptr)),
+		step:      areaStep,
+		frameSize: areas.frameCount * areaStep,
+	}
 }
