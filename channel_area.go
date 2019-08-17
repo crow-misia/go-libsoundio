@@ -17,24 +17,21 @@ import (
 )
 
 type ChannelArea struct {
-	ptr       uintptr
-	step      int
-	frameSize int
+	buffer []byte
+	step   int
 }
 
 // fields
 
-// GetBuffer returns base address of buffer.
+// GetBuffer returns buffer.
 func (a *ChannelArea) GetBuffer() []byte {
-	size := a.frameSize
+	return a.buffer
+}
 
-	sh := &reflect.SliceHeader{
-		Data: a.ptr,
-		Len:  size,
-		Cap:  size,
-	}
-
-	return *(*[]byte)(unsafe.Pointer(sh))
+func (a *ChannelArea) getBuffer(frame int) []byte {
+	step := a.step
+	offset := frame * a.step
+	return a.buffer[offset : offset+step]
 }
 
 // GetStep returns ow many bytes it takes to get from the beginning of one sample to
@@ -43,15 +40,22 @@ func (a *ChannelArea) GetStep() int {
 	return a.step
 }
 
-func newChannelArea(areas *ChannelAreas, channel int) *ChannelArea {
+func newChannelArea(ptr uintptr, channel int, frameCount int) *ChannelArea {
 	size := C.sizeof_struct_SoundIoChannelArea
-	ptr := areas.ptr + uintptr(channel*size)
-	area := (*C.struct_SoundIoChannelArea)(unsafe.Pointer(ptr))
+	areaPtr := ptr + uintptr(channel*size)
+	area := (*C.struct_SoundIoChannelArea)(unsafe.Pointer(areaPtr))
 	areaStep := int(area.step)
+	frameSize := frameCount * areaStep
+
+	sh := &reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(area.ptr)),
+		Len:  frameSize,
+		Cap:  frameSize,
+	}
+	buffer := *(*[]byte)(unsafe.Pointer(sh))
 
 	return &ChannelArea{
-		ptr:       uintptr(unsafe.Pointer(area.ptr)),
-		step:      areaStep,
-		frameSize: areas.frameCount * areaStep,
+		buffer: buffer,
+		step:   areaStep,
 	}
 }

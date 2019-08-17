@@ -72,7 +72,7 @@ func main() {
 		_, _ = fmt.Fprintln(os.Stderr, err)
 		exitCode = 1
 	} else if len(outfile) == 0 {
-		_, _ = fmt.Fprintln(os.Stderr, err)
+		flag.PrintDefaults()
 		exitCode = 1
 	} else {
 		ctx := context.Background()
@@ -235,10 +235,8 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 			} else {
 				for frame := 0; frame < frameCount; frame++ {
 					for ch := 0; ch < channelCount; ch++ {
-						area := areas.GetArea(ch)
-						step := area.GetStep()
-						offset := frame * step
-						_, _ = ringBuffer.Write(area.GetBuffer()[offset : offset+step])
+						buffer := areas.GetBuffer(ch, frame)
+						_, _ = ringBuffer.Write(buffer)
 					}
 				}
 			}

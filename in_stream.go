@@ -183,12 +183,10 @@ func (s *InStream) BeginRead(frameCount *int) (*ChannelAreas, error) {
 	nativeFrameCount := C.int(*frameCount)
 	err := convertToError(C.soundio_instream_begin_read(s.getPointer(), &ptrs, &nativeFrameCount))
 	*frameCount = int(nativeFrameCount)
-
-	return &ChannelAreas{
-		ptr:          uintptr(unsafe.Pointer(ptrs)),
-		channelCount: s.GetLayout().GetChannelCount(),
-		frameCount:   *frameCount,
-	}, err
+	if err != nil {
+		return nil, err
+	}
+	return newChannelAreas(ptrs, s.GetLayout().GetChannelCount(), *frameCount), nil
 }
 
 // EndRead will drop all of the frames from when you called.

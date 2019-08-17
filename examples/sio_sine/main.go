@@ -136,11 +136,9 @@ func realMain(ctx context.Context) error {
 				sample := float32(math.Sin((secondsOffset + float64(frame)*secondsPerFrame) * radiansPerSecond))
 
 				for channel := 0; channel < channelCount; channel++ {
-					area := areas.GetArea(channel)
-					buffer := area.GetBuffer()
+					buffer := areas.GetBuffer(channel, frame)
 					bites := math.Float32bits(sample)
-					step := area.GetStep()
-					binary.LittleEndian.PutUint32(buffer[step*frame:], bites)
+					binary.LittleEndian.PutUint32(buffer, bites)
 				}
 			}
 

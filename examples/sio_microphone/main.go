@@ -248,10 +248,8 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			} else {
 				for frame := 0; frame < frameCount; frame++ {
 					for ch := 0; ch < channelCount; ch++ {
-						area := areas.GetArea(ch)
-						step := area.GetStep()
-						offset := frame * step
-						_, _ = ringBuffer.Write(area.GetBuffer()[offset : offset+step])
+						buffer := areas.GetBuffer(ch, frame)
+						_, _ = ringBuffer.Write(buffer)
 					}
 				}
 			}
@@ -305,10 +303,8 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			zeroArray := make([]byte, 16)
 			for frame := 0; frame < frameCount; frame++ {
 				for ch := 0; ch < channelCount; ch++ {
-					area := areas.GetArea(ch)
-					step := area.GetStep()
-					offset := frame * step
-					copy(area.GetBuffer()[offset:offset+step], zeroArray[:step])
+					buffer := areas.GetBuffer(ch, frame)
+					copy(buffer, zeroArray)
 				}
 			}
 			_ = stream.EndWrite()
@@ -337,10 +333,8 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			}
 			for frame := 0; frame < frameCount; frame++ {
 				for ch := 0; ch < channelCount; ch++ {
-					area := areas.GetArea(ch)
-					step := area.GetStep()
-					offset := frame * step
-					_, _ = ringBuffer.Read(area.GetBuffer()[offset : offset+step])
+					buffer := areas.GetBuffer(ch, frame)
+					_, _ = ringBuffer.Read(buffer)
 				}
 			}
 			_ = stream.EndWrite()

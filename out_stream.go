@@ -194,12 +194,10 @@ func (s *OutStream) BeginWrite(frameCount *int) (*ChannelAreas, error) {
 	nativeFrameCount := C.int(*frameCount)
 	err := convertToError(C.soundio_outstream_begin_write(s.getPointer(), &ptrs, &nativeFrameCount))
 	*frameCount = int(nativeFrameCount)
-
-	return &ChannelAreas{
-		ptr:          uintptr(unsafe.Pointer(ptrs)),
-		channelCount: s.GetLayout().GetChannelCount(),
-		frameCount:   *frameCount,
-	}, err
+	if err != nil {
+		return nil, err
+	}
+	return newChannelAreas(ptrs, s.GetLayout().GetChannelCount(), *frameCount), nil
 }
 
 // EndWrite commits the write that you began with BeginWrite.
