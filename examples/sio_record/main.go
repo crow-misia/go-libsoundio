@@ -13,6 +13,7 @@ import (
 	"fmt"
 	soundio "github.com/crow-misia/go-libsoundio"
 	"github.com/glycerine/rbuf"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -69,7 +70,7 @@ func main() {
 
 	enumBackend, err := parseBackend(backend)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
+		log.Println(err)
 		exitCode = 1
 	} else if len(outfile) == 0 {
 		flag.PrintDefaults()
@@ -80,7 +81,7 @@ func main() {
 		err := realMain(parentCtx, enumBackend, deviceId, isRaw, outfile)
 		if err != nil {
 			exitCode = 1
-			_, _ = fmt.Fprintln(os.Stderr, err)
+			log.Println(err)
 		}
 		parentCtx.Done()
 	}
@@ -165,7 +166,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 	}
 	defer selectedDevice.RemoveReference()
 
-	_, _ = fmt.Fprintf(os.Stderr, "Device: %s\n", selectedDevice.GetName())
+	log.Printf("Device: %s", selectedDevice.GetName())
 
 	if selectedDevice.GetProbeError() != nil {
 		return fmt.Errorf("unable to probe device: %s", selectedDevice.GetProbeError())
@@ -183,7 +184,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 	if sampleRate == 0 {
 		sampleRate = selectedDevice.GetSampleRates()[0].GetMax()
 	}
-	_, _ = fmt.Fprintf(os.Stderr, "Sample rate: %d\n", sampleRate)
+	log.Printf("Sample rate: %d", sampleRate)
 
 	format := soundio.FormatInvalid
 	for _, f := range prioritizedFormats {
@@ -195,7 +196,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 	if format == soundio.FormatInvalid {
 		format = selectedDevice.GetFormats()[0]
 	}
-	_, _ = fmt.Fprintf(os.Stderr, "Format: %s\n", format)
+	log.Printf("Format: %s", format)
 
 	file, err := os.Create(outfile)
 	if err != nil {
@@ -222,8 +223,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 			frameCount := frameLeft
 			areas, err := stream.BeginRead(&frameCount)
 			if err != nil {
-
-				_, _ = fmt.Fprintf(os.Stderr, "begin read error: %s", err)
+				log.Printf("begin read error: %s", err)
 				cancelParent()
 				return
 			}
@@ -250,7 +250,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 	})
 	instream.SetOverflowCallback(func(stream *soundio.InStream) {
 		overflowCount++
-		_, _ = fmt.Fprintf(os.Stderr, "overflow %d\n", overflowCount)
+		log.Printf("overflow %d", overflowCount)
 	})
 	err = instream.Open()
 	if err != nil {
@@ -265,7 +265,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 		return fmt.Errorf("unable to start input device: %s", err)
 	}
 
-	_, _ = fmt.Fprintln(os.Stderr, "Type CTRL+C to quit by killing process...")
+	log.Println("Type CTRL+C to quit by killing process...")
 
 	for {
 		select {
@@ -299,12 +299,12 @@ func signalContext(ctx context.Context) context.Context {
 
 		select {
 		case <-parent.Done():
-			fmt.Println("Cancel from parent")
+			log.Println("Cancel from parent")
 			return
 		case s := <-sig:
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-				fmt.Println("Stop!")
+				log.Println("Stop!")
 				return
 			}
 		}

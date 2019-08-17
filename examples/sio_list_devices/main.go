@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	soundio "github.com/crow-misia/go-libsoundio"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -33,14 +34,14 @@ func main() {
 
 	enumBackend, err := parseBackend(backend)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
+		log.Println(err)
 	} else {
 		ctx := context.Background()
 		parentCtx := signalContext(ctx)
 		err := realMain(parentCtx, enumBackend, watchEvents, shortOutput)
 		if err != nil {
 			exitCode = 1
-			_, _ = fmt.Fprintln(os.Stderr, err)
+			log.Println(err)
 		}
 		parentCtx.Done()
 	}
@@ -71,15 +72,13 @@ func parseBackend(str string) (soundio.Backend, error) {
 func printChannelLayout(layout *soundio.ChannelLayout) {
 	name := layout.GetName()
 	if len(name) == 0 {
+		names := make([]string, layout.GetChannelCount())
 		for i, channel := range layout.GetChannels() {
-			if i == 0 {
-				_, _ = fmt.Fprintf(os.Stderr, "%s", channel)
-			} else {
-				_, _ = fmt.Fprintf(os.Stderr, ", %s", channel)
-			}
+			names[i] = fmt.Sprint(channel)
 		}
+		log.Printf("    %s", strings.Join(names, ", "))
 	} else {
-		_, _ = fmt.Fprintf(os.Stderr, name)
+		log.Printf("    %s", name)
 	}
 }
 
@@ -94,58 +93,51 @@ func printDevice(device *soundio.Device, shortOutput bool, isDefault bool) {
 		rawStr = " (raw)"
 	}
 
-	_, _ = fmt.Fprintf(os.Stderr, "%s%s%s\n", device.GetName(), defaultStr, rawStr)
+	log.Printf("%s%s%s", device.GetName(), defaultStr, rawStr)
 	if shortOutput {
 		return
 	}
 
-	_, _ = fmt.Fprintf(os.Stderr, "  id: %s\n", device.GetID())
+	log.Printf("  id: %s", device.GetID())
 
 	if device.GetProbeError() == nil {
-		_, _ = fmt.Fprintln(os.Stderr, "  channel layouts:")
+		log.Println("  channel layouts:")
 		for _, layout := range device.GetLayouts() {
-			_, _ = fmt.Fprint(os.Stderr, "    ")
 			printChannelLayout(layout)
-			_, _ = fmt.Fprintln(os.Stderr)
 		}
 		if device.GetCurrentLayout().GetChannelCount() > 0 {
-			_, _ = fmt.Fprint(os.Stderr, "  current layout: ")
+			log.Print("  current layout: ")
 			printChannelLayout(device.GetCurrentLayout())
-			_, _ = fmt.Fprintln(os.Stderr)
 		}
 
-		_, _ = fmt.Fprintln(os.Stderr, "  sample rates:")
+		log.Println("  sample rates:")
 		for _, rate := range device.GetSampleRates() {
-			_, _ = fmt.Fprintf(os.Stderr, "    %d - %d\n", rate.GetMin(), rate.GetMax())
+			log.Printf("    %d - %d", rate.GetMin(), rate.GetMax())
 		}
 		if device.GetSampleRateCurrent() > 0 {
-			_, _ = fmt.Fprintf(os.Stderr, "  current sample rate: %d\n", device.GetSampleRateCurrent())
+			log.Printf("  current sample rate: %d", device.GetSampleRateCurrent())
 		}
 
-		_, _ = fmt.Fprint(os.Stderr, "  formats: ")
+		formats := make([]string, device.GetFormatCount())
 		for i, format := range device.GetFormats() {
-			if i == 0 {
-				_, _ = fmt.Fprint(os.Stderr, format)
-			} else {
-				_, _ = fmt.Fprintf(os.Stderr, ", %s", format)
-			}
+			formats[i] = fmt.Sprint(format)
 		}
-		_, _ = fmt.Fprintln(os.Stderr)
+		log.Printf("  formats: %s", strings.Join(formats, ", "))
 
 		if device.GetCurrentFormat() != soundio.FormatInvalid {
-			_, _ = fmt.Fprintf(os.Stderr, "  current format: %s\n", device.GetCurrentFormat())
+			log.Printf("  current format: %s", device.GetCurrentFormat())
 		}
 
-		_, _ = fmt.Fprintf(os.Stderr, "  min software latency: %0.8f sec\n", device.GetSoftwareLatencyMin())
-		_, _ = fmt.Fprintf(os.Stderr, "  max software latency: %0.8f sec\n", device.GetSoftwareLatencyMax())
+		log.Printf("  min software latency: %0.8f sec", device.GetSoftwareLatencyMin())
+		log.Printf("  max software latency: %0.8f sec", device.GetSoftwareLatencyMax())
 		if device.GetSoftwareLatencyCurrent() != 0.0 {
-			_, _ = fmt.Fprintf(os.Stderr, "  current software latency: %0.8f sec\n", device.GetSoftwareLatencyCurrent())
+			log.Printf("  current software latency: %0.8f sec", device.GetSoftwareLatencyCurrent())
 		}
 	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "  probe error: %s\n", device.GetProbeError())
+		log.Printf("  probe error: %s", device.GetProbeError())
 	}
 
-	_, _ = fmt.Fprintln(os.Stderr)
+	log.Println()
 }
 
 func listDevices(s *soundio.SoundIo, shortOutput bool) {
@@ -155,21 +147,22 @@ func listDevices(s *soundio.SoundIo, shortOutput bool) {
 	defaultOutput := s.DefaultOutputDeviceIndex()
 	defaultInput := s.DefaultInputDeviceIndex()
 
-	_, _ = fmt.Fprintf(os.Stderr, "--------Input Devices--------\n\n")
+	log.Println("--------Input Devices--------")
 	for i := 0; i < inputCount; i++ {
 		device := s.GetInputDevice(i)
 		printDevice(device, shortOutput, defaultInput == i)
 		device.RemoveReference()
 	}
 
-	_, _ = fmt.Fprintf(os.Stderr, "--------Output Devices--------\n\n")
+	log.Println("--------Output Devices--------")
 	for i := 0; i < outputCount; i++ {
 		device := s.GetOutputDevice(i)
 		printDevice(device, shortOutput, defaultOutput == i)
 		device.RemoveReference()
 	}
 
-	_, _ = fmt.Fprintf(os.Stderr, "\n%d devices found\n", inputCount+outputCount)
+	log.Println()
+	log.Printf("%d devices found", inputCount+outputCount)
 }
 
 func realMain(ctx context.Context, backend soundio.Backend, watchEvents bool, shortOutput bool) error {
@@ -188,7 +181,7 @@ func realMain(ctx context.Context, backend soundio.Backend, watchEvents bool, sh
 
 	if watchEvents {
 		s.SetOnDevicesChange(func(s *soundio.SoundIo) {
-			_, _ = fmt.Fprintln(os.Stderr, "devices changed")
+			log.Println("devices changed")
 			listDevices(s, shortOutput)
 		})
 
@@ -234,12 +227,12 @@ func signalContext(ctx context.Context) context.Context {
 
 		select {
 		case <-parent.Done():
-			fmt.Println("Cancel from parent")
+			log.Println("Cancel from parent")
 			return
 		case s := <-sig:
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-				fmt.Println("Stop!")
+				log.Println("Stop!")
 				return
 			}
 		}

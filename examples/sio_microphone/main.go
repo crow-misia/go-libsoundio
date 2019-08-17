@@ -13,6 +13,7 @@ import (
 	"fmt"
 	soundio "github.com/crow-misia/go-libsoundio"
 	"github.com/glycerine/rbuf"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -71,7 +72,7 @@ func main() {
 
 	enumBackend, err := parseBackend(backend)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
+		log.Println(err)
 		exitCode = 1
 	} else {
 		ctx := context.Background()
@@ -79,7 +80,7 @@ func main() {
 		err := realMain(parentCtx, enumBackend, inputDeviceId, inputIsRaw, outputDeviceId, outputIsRaw, latencySec)
 		if err != nil {
 			exitCode = 1
-			_, _ = fmt.Fprintln(os.Stderr, err)
+			log.Println(err)
 		}
 		parentCtx.Done()
 	}
@@ -163,7 +164,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return err
 	}
 	defer selectedInputDevice.RemoveReference()
-	_, _ = fmt.Fprintf(os.Stderr, "Input device: %s\n", selectedInputDevice.GetName())
+	log.Printf("Input device: %s", selectedInputDevice.GetName())
 	if selectedInputDevice.GetProbeError() != nil {
 		return fmt.Errorf("unable to probe device: %s", selectedInputDevice.GetProbeError())
 	}
@@ -179,7 +180,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return err
 	}
 	defer selectedOutputDevice.RemoveReference()
-	_, _ = fmt.Fprintf(os.Stderr, "Output device: %s\n", selectedOutputDevice.GetName())
+	log.Printf("Output device: %s", selectedOutputDevice.GetName())
 	if selectedOutputDevice.GetProbeError() != nil {
 		return fmt.Errorf("unable to probe device: %s", selectedOutputDevice.GetProbeError())
 	}
@@ -187,7 +188,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	selectedOutputDevice.SortChannelLayouts()
 	layout := soundio.BestMatchingLayout(selectedOutputDevice, selectedInputDevice)
 	if layout == nil {
-		return fmt.Errorf("channel layouts not compatible")
+		return errors.New("channel layouts not compatible")
 	}
 
 	sampleRate := 0
@@ -198,9 +199,9 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		}
 	}
 	if sampleRate == 0 {
-		return fmt.Errorf("incompatible sample rates")
+		return errors.New("incompatible sample rates")
 	}
-	_, _ = fmt.Fprintf(os.Stderr, "Sample rate: %d\n", sampleRate)
+	log.Printf("Sample rate: %d", sampleRate)
 
 	format := soundio.FormatInvalid
 	for _, f := range prioritizedFormats {
@@ -210,9 +211,9 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		}
 	}
 	if format == soundio.FormatInvalid {
-		return fmt.Errorf("incompatible sample formats")
+		return errors.New("incompatible sample formats")
 	}
-	_, _ = fmt.Fprintf(os.Stderr, "Format: %s\n", format)
+	log.Printf("Format: %s", format)
 
 	var ringBuffer *rbuf.FixedSizeRingBuf
 
@@ -236,7 +237,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			frameCount := frameLeft
 			areas, err := stream.BeginRead(&frameCount)
 			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "begin read error: %s", err)
+				log.Printf("begin read error: %s", err)
 				cancelParent()
 				return
 			}
@@ -263,7 +264,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	})
 	instream.SetOverflowCallback(func(stream *soundio.InStream) {
 		overflowCount++
-		_, _ = fmt.Fprintf(os.Stderr, "overflow %d\n", overflowCount)
+		log.Printf("overflow %d", overflowCount)
 	})
 	err = instream.Open()
 	if err != nil {
@@ -272,11 +273,11 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 
 	outstream := selectedOutputDevice.OutStreamCreate()
 	defer outstream.Destroy()
-	fmt.Printf("Format: %s\n", format)
-	fmt.Printf("layout: %s\n", layout.GetName())
-	fmt.Printf("layout: %d\n", layout.GetChannelCount())
-	fmt.Printf("sampleRate: %d\n", sampleRate)
-	fmt.Printf("latencySec: %f\n", latencySec)
+	log.Printf("format: %s", format)
+	log.Printf("layout name: %s", layout.GetName())
+	log.Printf("layout channel count: %d", layout.GetChannelCount())
+	log.Printf("sample rate: %d", sampleRate)
+	log.Printf("latency seconds: %f sec", latencySec)
 	outstream.SetFormat(format)
 	outstream.SetLayout(layout)
 	outstream.SetSampleRate(sampleRate)
@@ -293,7 +294,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 
 			areas, err := stream.BeginWrite(&frameCount)
 			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "begin write error: %s", err)
+				log.Printf("begin write error: %s", err)
 				cancelParent()
 				return
 			}
@@ -324,7 +325,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 
 			areas, err := stream.BeginWrite(&frameCount)
 			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "begin write error: %s", err)
+				log.Printf("begin write error: %s", err)
 				cancelParent()
 				return
 			}
@@ -347,7 +348,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	})
 	outstream.SetUnderflowCallback(func(stream *soundio.OutStream) {
 		underflowCount++
-		_, _ = fmt.Fprintf(os.Stderr, "underflow %d\n", overflowCount)
+		log.Printf("underflow %d", overflowCount)
 	})
 	err = outstream.Open()
 	if err != nil {
@@ -366,7 +367,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return fmt.Errorf("unable to start output device: %s", err)
 	}
 
-	_, _ = fmt.Fprintln(os.Stderr, "Type CTRL+C to quit by killing process...")
+	log.Println("Type CTRL+C to quit by killing process...")
 
 	go func() {
 		for {
@@ -404,12 +405,12 @@ func signalContext(ctx context.Context) context.Context {
 
 		select {
 		case <-parent.Done():
-			fmt.Println("Cancel from parent")
+			log.Println("Cancel from parent")
 			return
 		case s := <-sig:
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-				fmt.Println("Stop!")
+				log.Println("Stop!")
 				return
 			}
 		}
