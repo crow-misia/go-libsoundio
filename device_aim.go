@@ -15,8 +15,8 @@ import "C"
 type DeviceAim uint32
 
 const (
-	DeviceAimInput  DeviceAim = C.SoundIoDeviceAimInput  // capture / recording
-	DeviceAimOutput           = C.SoundIoDeviceAimOutput // playback
+	DeviceAimInput  = DeviceAim(C.SoundIoDeviceAimInput)  // capture / recording
+	DeviceAimOutput = DeviceAim(C.SoundIoDeviceAimOutput) // playback
 )
 
 func (a DeviceAim) String() string {

@@ -47,7 +47,7 @@ func realMain(ctx context.Context) error {
 	}
 
 	log.Printf("libsound Version = %s", soundio.Version())
-	log.Printf("Front Center Channel Name = %s", soundio.ChannelID(soundio.ChannelIDFrontCenter))
+	log.Printf("Front Center Channel Name = %s", soundio.ChannelIDFrontCenter)
 	log.Printf("Front Left Channel ID = %d", soundio.ParseChannelID("Front Left"))
 	log.Printf("front-right Channel ID = %d", soundio.ParseChannelID("front-right"))
 	log.Printf("Channel Max Count = %d", soundio.MaxChannels)

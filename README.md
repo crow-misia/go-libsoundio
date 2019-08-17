@@ -9,4 +9,3 @@
 Go bindings for the libsoundio sound library
 
 * For more information and documentation for libsoundio: http://libsound.io/
-

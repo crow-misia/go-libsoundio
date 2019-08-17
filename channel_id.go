@@ -17,83 +17,83 @@ import "unsafe"
 type ChannelID uint32
 
 const (
-	ChannelIDInvalid          ChannelID = C.SoundIoChannelIdInvalid
-	ChannelIDFrontLeft                  = C.SoundIoChannelIdFrontLeft
-	ChannelIDFrontRight                 = C.SoundIoChannelIdFrontRight
-	ChannelIDFrontCenter                = C.SoundIoChannelIdFrontCenter
-	ChannelIDLfe                        = C.SoundIoChannelIdLfe
-	ChannelIDBackLeft                   = C.SoundIoChannelIdBackLeft
-	ChannelIDBackRight                  = C.SoundIoChannelIdBackRight
-	ChannelIDFrontLeftCenter            = C.SoundIoChannelIdFrontLeftCenter
-	ChannelIDFrontRightCenter           = C.SoundIoChannelIdFrontRightCenter
-	ChannelIDBackCenter                 = C.SoundIoChannelIdBackCenter
-	ChannelIDSideLeft                   = C.SoundIoChannelIdSideLeft
-	ChannelIDSideRight                  = C.SoundIoChannelIdSideRight
-	ChannelIDTopCenter                  = C.SoundIoChannelIdTopCenter
-	ChannelIDTopFrontLeft               = C.SoundIoChannelIdTopFrontLeft
-	ChannelIDTopFrontCenter             = C.SoundIoChannelIdTopFrontCenter
-	ChannelIDTopFrontRight              = C.SoundIoChannelIdTopFrontRight
-	ChannelIDTopBackLeft                = C.SoundIoChannelIdTopBackLeft
-	ChannelIDTopBackCenter              = C.SoundIoChannelIdTopBackCenter
-	ChannelIDTopBackRight               = C.SoundIoChannelIdTopBackRight
+	ChannelIDInvalid          = ChannelID(C.SoundIoChannelIdInvalid)
+	ChannelIDFrontLeft        = ChannelID(C.SoundIoChannelIdFrontLeft)
+	ChannelIDFrontRight       = ChannelID(C.SoundIoChannelIdFrontRight)
+	ChannelIDFrontCenter      = ChannelID(C.SoundIoChannelIdFrontCenter)
+	ChannelIDLfe              = ChannelID(C.SoundIoChannelIdLfe)
+	ChannelIDBackLeft         = ChannelID(C.SoundIoChannelIdBackLeft)
+	ChannelIDBackRight        = ChannelID(C.SoundIoChannelIdBackRight)
+	ChannelIDFrontLeftCenter  = ChannelID(C.SoundIoChannelIdFrontLeftCenter)
+	ChannelIDFrontRightCenter = ChannelID(C.SoundIoChannelIdFrontRightCenter)
+	ChannelIDBackCenter       = ChannelID(C.SoundIoChannelIdBackCenter)
+	ChannelIDSideLeft         = ChannelID(C.SoundIoChannelIdSideLeft)
+	ChannelIDSideRight        = ChannelID(C.SoundIoChannelIdSideRight)
+	ChannelIDTopCenter        = ChannelID(C.SoundIoChannelIdTopCenter)
+	ChannelIDTopFrontLeft     = ChannelID(C.SoundIoChannelIdTopFrontLeft)
+	ChannelIDTopFrontCenter   = ChannelID(C.SoundIoChannelIdTopFrontCenter)
+	ChannelIDTopFrontRight    = ChannelID(C.SoundIoChannelIdTopFrontRight)
+	ChannelIDTopBackLeft      = ChannelID(C.SoundIoChannelIdTopBackLeft)
+	ChannelIDTopBackCenter    = ChannelID(C.SoundIoChannelIdTopBackCenter)
+	ChannelIDTopBackRight     = ChannelID(C.SoundIoChannelIdTopBackRight)
 
-	ChannelIDBackLeftCenter      = C.SoundIoChannelIdBackLeftCenter
-	ChannelIDBackRightCenter     = C.SoundIoChannelIdBackRightCenter
-	ChannelIDFrontLeftWide       = C.SoundIoChannelIdFrontLeftWide
-	ChannelIDFrontRightWide      = C.SoundIoChannelIdFrontRightWide
-	ChannelIDFrontLeftHigh       = C.SoundIoChannelIdFrontLeftHigh
-	ChannelIDFrontCenterHigh     = C.SoundIoChannelIdFrontCenterHigh
-	ChannelIDFrontRightHigh      = C.SoundIoChannelIdFrontRightHigh
-	ChannelIDTopFrontLeftCenter  = C.SoundIoChannelIdTopFrontLeftCenter
-	ChannelIDTopFrontRightCenter = C.SoundIoChannelIdTopFrontRightCenter
-	ChannelIDTopSideLeft         = C.SoundIoChannelIdTopSideLeft
-	ChannelIDTopSideRight        = C.SoundIoChannelIdTopSideRight
-	ChannelIDLeftLfe             = C.SoundIoChannelIdLeftLfe
-	ChannelIDRightLfe            = C.SoundIoChannelIdRightLfe
-	ChannelIDLfe2                = C.SoundIoChannelIdLfe2
-	ChannelIDBottomCenter        = C.SoundIoChannelIdBottomCenter
-	ChannelIDBottomLeftCenter    = C.SoundIoChannelIdBottomLeftCenter
-	ChannelIDBottomRightCenter   = C.SoundIoChannelIdBottomRightCenter
+	ChannelIDBackLeftCenter      = ChannelID(C.SoundIoChannelIdBackLeftCenter)
+	ChannelIDBackRightCenter     = ChannelID(C.SoundIoChannelIdBackRightCenter)
+	ChannelIDFrontLeftWide       = ChannelID(C.SoundIoChannelIdFrontLeftWide)
+	ChannelIDFrontRightWide      = ChannelID(C.SoundIoChannelIdFrontRightWide)
+	ChannelIDFrontLeftHigh       = ChannelID(C.SoundIoChannelIdFrontLeftHigh)
+	ChannelIDFrontCenterHigh     = ChannelID(C.SoundIoChannelIdFrontCenterHigh)
+	ChannelIDFrontRightHigh      = ChannelID(C.SoundIoChannelIdFrontRightHigh)
+	ChannelIDTopFrontLeftCenter  = ChannelID(C.SoundIoChannelIdTopFrontLeftCenter)
+	ChannelIDTopFrontRightCenter = ChannelID(C.SoundIoChannelIdTopFrontRightCenter)
+	ChannelIDTopSideLeft         = ChannelID(C.SoundIoChannelIdTopSideLeft)
+	ChannelIDTopSideRight        = ChannelID(C.SoundIoChannelIdTopSideRight)
+	ChannelIDLeftLfe             = ChannelID(C.SoundIoChannelIdLeftLfe)
+	ChannelIDRightLfe            = ChannelID(C.SoundIoChannelIdRightLfe)
+	ChannelIDLfe2                = ChannelID(C.SoundIoChannelIdLfe2)
+	ChannelIDBottomCenter        = ChannelID(C.SoundIoChannelIdBottomCenter)
+	ChannelIDBottomLeftCenter    = ChannelID(C.SoundIoChannelIdBottomLeftCenter)
+	ChannelIDBottomRightCenter   = ChannelID(C.SoundIoChannelIdBottomRightCenter)
 
-	ChannelIDMsMid  = C.SoundIoChannelIdMsMid  // Mid recording
-	ChannelIDMsSide = C.SoundIoChannelIdMsSide // Side recording
+	ChannelIDMsMid  = ChannelID(C.SoundIoChannelIdMsMid)  // Mid recording
+	ChannelIDMsSide = ChannelID(C.SoundIoChannelIdMsSide) // Side recording
 
-	ChannelIDAmbisonicW = C.SoundIoChannelIdAmbisonicW
-	ChannelIDAmbisonicX = C.SoundIoChannelIdAmbisonicX
-	ChannelIDAmbisonicY = C.SoundIoChannelIdAmbisonicY
-	ChannelIDAmbisonicZ = C.SoundIoChannelIdAmbisonicZ
+	ChannelIDAmbisonicW = ChannelID(C.SoundIoChannelIdAmbisonicW)
+	ChannelIDAmbisonicX = ChannelID(C.SoundIoChannelIdAmbisonicX)
+	ChannelIDAmbisonicY = ChannelID(C.SoundIoChannelIdAmbisonicY)
+	ChannelIDAmbisonicZ = ChannelID(C.SoundIoChannelIdAmbisonicZ)
 
 	// ChannelIDXyX is X of X-Y Recording
-	ChannelIDXyX = C.SoundIoChannelIdXyX
+	ChannelIDXyX = ChannelID(C.SoundIoChannelIdXyX)
 	// ChannelIDXyY is Y of X-Y Recording
-	ChannelIDXyY = C.SoundIoChannelIdXyY
+	ChannelIDXyY = ChannelID(C.SoundIoChannelIdXyY)
 
-	ChannelIDHeadphonesLeft   = C.SoundIoChannelIdHeadphonesLeft
-	ChannelIDHeadphonesRight  = C.SoundIoChannelIdHeadphonesRight
-	ChannelIDClickTrack       = C.SoundIoChannelIdClickTrack
-	ChannelIDForeignLanguage  = C.SoundIoChannelIdForeignLanguage
-	ChannelIDHearingImpaired  = C.SoundIoChannelIdHearingImpaired
-	ChannelIDNarration        = C.SoundIoChannelIdNarration
-	ChannelIDHaptic           = C.SoundIoChannelIdHaptic
-	ChannelIDDialogCentricMix = C.SoundIoChannelIdDialogCentricMix
+	ChannelIDHeadphonesLeft   = ChannelID(C.SoundIoChannelIdHeadphonesLeft)
+	ChannelIDHeadphonesRight  = ChannelID(C.SoundIoChannelIdHeadphonesRight)
+	ChannelIDClickTrack       = ChannelID(C.SoundIoChannelIdClickTrack)
+	ChannelIDForeignLanguage  = ChannelID(C.SoundIoChannelIdForeignLanguage)
+	ChannelIDHearingImpaired  = ChannelID(C.SoundIoChannelIdHearingImpaired)
+	ChannelIDNarration        = ChannelID(C.SoundIoChannelIdNarration)
+	ChannelIDHaptic           = ChannelID(C.SoundIoChannelIdHaptic)
+	ChannelIDDialogCentricMix = ChannelID(C.SoundIoChannelIdDialogCentricMix)
 
-	ChannelIDAux   = C.SoundIoChannelIdAux
-	ChannelIDAux0  = C.SoundIoChannelIdAux0
-	ChannelIDAux1  = C.SoundIoChannelIdAux1
-	ChannelIDAux2  = C.SoundIoChannelIdAux2
-	ChannelIDAux3  = C.SoundIoChannelIdAux3
-	ChannelIDAux4  = C.SoundIoChannelIdAux4
-	ChannelIDAux5  = C.SoundIoChannelIdAux5
-	ChannelIDAux6  = C.SoundIoChannelIdAux6
-	ChannelIDAux7  = C.SoundIoChannelIdAux7
-	ChannelIDAux8  = C.SoundIoChannelIdAux8
-	ChannelIDAux9  = C.SoundIoChannelIdAux9
-	ChannelIDAux10 = C.SoundIoChannelIdAux10
-	ChannelIDAux11 = C.SoundIoChannelIdAux11
-	ChannelIDAux12 = C.SoundIoChannelIdAux12
-	ChannelIDAux13 = C.SoundIoChannelIdAux13
-	ChannelIDAux14 = C.SoundIoChannelIdAux14
-	ChannelIDAux15 = C.SoundIoChannelIdAux15
+	ChannelIDAux   = ChannelID(C.SoundIoChannelIdAux)
+	ChannelIDAux0  = ChannelID(C.SoundIoChannelIdAux0)
+	ChannelIDAux1  = ChannelID(C.SoundIoChannelIdAux1)
+	ChannelIDAux2  = ChannelID(C.SoundIoChannelIdAux2)
+	ChannelIDAux3  = ChannelID(C.SoundIoChannelIdAux3)
+	ChannelIDAux4  = ChannelID(C.SoundIoChannelIdAux4)
+	ChannelIDAux5  = ChannelID(C.SoundIoChannelIdAux5)
+	ChannelIDAux6  = ChannelID(C.SoundIoChannelIdAux6)
+	ChannelIDAux7  = ChannelID(C.SoundIoChannelIdAux7)
+	ChannelIDAux8  = ChannelID(C.SoundIoChannelIdAux8)
+	ChannelIDAux9  = ChannelID(C.SoundIoChannelIdAux9)
+	ChannelIDAux10 = ChannelID(C.SoundIoChannelIdAux10)
+	ChannelIDAux11 = ChannelID(C.SoundIoChannelIdAux11)
+	ChannelIDAux12 = ChannelID(C.SoundIoChannelIdAux12)
+	ChannelIDAux13 = ChannelID(C.SoundIoChannelIdAux13)
+	ChannelIDAux14 = ChannelID(C.SoundIoChannelIdAux14)
+	ChannelIDAux15 = ChannelID(C.SoundIoChannelIdAux15)
 )
 
 func (c ChannelID) String() string {

@@ -15,13 +15,13 @@ import "C"
 type Backend uint32
 
 const (
-	BackendNone       Backend = C.SoundIoBackendNone       // None
-	BackendJack               = C.SoundIoBackendJack       // Jack
-	BackendPulseAudio         = C.SoundIoBackendPulseAudio // PulseAudio
-	BackendAlsa               = C.SoundIoBackendAlsa       // ALSA
-	BackendCoreAudio          = C.SoundIoBackendCoreAudio  // CoreAudio
-	BackendWasapi             = C.SoundIoBackendWasapi     // WASAPI
-	BackendDummy              = C.SoundIoBackendDummy      // Dummy
+	BackendNone       = Backend(C.SoundIoBackendNone)       // None
+	BackendJack       = Backend(C.SoundIoBackendJack)       // Jack
+	BackendPulseAudio = Backend(C.SoundIoBackendPulseAudio) // PulseAudio
+	BackendAlsa       = Backend(C.SoundIoBackendAlsa)       // ALSA
+	BackendCoreAudio  = Backend(C.SoundIoBackendCoreAudio)  // CoreAudio
+	BackendWasapi     = Backend(C.SoundIoBackendWasapi)     // WASAPI
+	BackendDummy      = Backend(C.SoundIoBackendDummy)      // Dummy
 )
 
 func (b Backend) String() string {

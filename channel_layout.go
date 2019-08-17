@@ -22,32 +22,32 @@ type ChannelLayout struct {
 }
 
 const (
-	ChannelLayoutIDMono            ChannelLayoutID = C.SoundIoChannelLayoutIdMono
-	ChannelLayoutIDStereo                          = C.SoundIoChannelLayoutIdStereo
-	ChannelLayoutID2Point1                         = C.SoundIoChannelLayoutId2Point1
-	ChannelLayoutID3Point0                         = C.SoundIoChannelLayoutId3Point0
-	ChannelLayoutID3Point0Back                     = C.SoundIoChannelLayoutId3Point0Back
-	ChannelLayoutID3Point1                         = C.SoundIoChannelLayoutId3Point1
-	ChannelLayoutID4Point0                         = C.SoundIoChannelLayoutId4Point0
-	ChannelLayoutIDQuad                            = C.SoundIoChannelLayoutIdQuad
-	ChannelLayoutIDQuadSide                        = C.SoundIoChannelLayoutIdQuadSide
-	ChannelLayoutID4Point1                         = C.SoundIoChannelLayoutId4Point1
-	ChannelLayoutID5Point0Back                     = C.SoundIoChannelLayoutId5Point0Back
-	ChannelLayoutID5Point0Side                     = C.SoundIoChannelLayoutId5Point0Side
-	ChannelLayoutID5Point1                         = C.SoundIoChannelLayoutId5Point1
-	ChannelLayoutID5Point1Back                     = C.SoundIoChannelLayoutId5Point1Back
-	ChannelLayoutID6Point0Side                     = C.SoundIoChannelLayoutId6Point0Side
-	ChannelLayoutID6Point0Front                    = C.SoundIoChannelLayoutId6Point0Front
-	ChannelLayoutIDHexagonal                       = C.SoundIoChannelLayoutIdHexagonal
-	ChannelLayoutID6Point1                         = C.SoundIoChannelLayoutId6Point1
-	ChannelLayoutID6Point1Back                     = C.SoundIoChannelLayoutId6Point1Back
-	ChannelLayoutID6Point1Front                    = C.SoundIoChannelLayoutId6Point1Front
-	ChannelLayoutID7Point0                         = C.SoundIoChannelLayoutId7Point0
-	ChannelLayoutID7Point0Front                    = C.SoundIoChannelLayoutId7Point0Front
-	ChannelLayoutID7Point1                         = C.SoundIoChannelLayoutId7Point1
-	ChannelLayoutID7Point1Wide                     = C.SoundIoChannelLayoutId7Point1Wide
-	ChannelLayoutID7Point1WideBack                 = C.SoundIoChannelLayoutId7Point1WideBack
-	ChannelLayoutIDOctagonal                       = C.SoundIoChannelLayoutIdOctagonal
+	ChannelLayoutIDMono            = ChannelLayoutID(C.SoundIoChannelLayoutIdMono)
+	ChannelLayoutIDStereo          = ChannelLayoutID(C.SoundIoChannelLayoutIdStereo)
+	ChannelLayoutID2Point1         = ChannelLayoutID(C.SoundIoChannelLayoutId2Point1)
+	ChannelLayoutID3Point0         = ChannelLayoutID(C.SoundIoChannelLayoutId3Point0)
+	ChannelLayoutID3Point0Back     = ChannelLayoutID(C.SoundIoChannelLayoutId3Point0Back)
+	ChannelLayoutID3Point1         = ChannelLayoutID(C.SoundIoChannelLayoutId3Point1)
+	ChannelLayoutID4Point0         = ChannelLayoutID(C.SoundIoChannelLayoutId4Point0)
+	ChannelLayoutIDQuad            = ChannelLayoutID(C.SoundIoChannelLayoutIdQuad)
+	ChannelLayoutIDQuadSide        = ChannelLayoutID(C.SoundIoChannelLayoutIdQuadSide)
+	ChannelLayoutID4Point1         = ChannelLayoutID(C.SoundIoChannelLayoutId4Point1)
+	ChannelLayoutID5Point0Back     = ChannelLayoutID(C.SoundIoChannelLayoutId5Point0Back)
+	ChannelLayoutID5Point0Side     = ChannelLayoutID(C.SoundIoChannelLayoutId5Point0Side)
+	ChannelLayoutID5Point1         = ChannelLayoutID(C.SoundIoChannelLayoutId5Point1)
+	ChannelLayoutID5Point1Back     = ChannelLayoutID(C.SoundIoChannelLayoutId5Point1Back)
+	ChannelLayoutID6Point0Side     = ChannelLayoutID(C.SoundIoChannelLayoutId6Point0Side)
+	ChannelLayoutID6Point0Front    = ChannelLayoutID(C.SoundIoChannelLayoutId6Point0Front)
+	ChannelLayoutIDHexagonal       = ChannelLayoutID(C.SoundIoChannelLayoutIdHexagonal)
+	ChannelLayoutID6Point1         = ChannelLayoutID(C.SoundIoChannelLayoutId6Point1)
+	ChannelLayoutID6Point1Back     = ChannelLayoutID(C.SoundIoChannelLayoutId6Point1Back)
+	ChannelLayoutID6Point1Front    = ChannelLayoutID(C.SoundIoChannelLayoutId6Point1Front)
+	ChannelLayoutID7Point0         = ChannelLayoutID(C.SoundIoChannelLayoutId7Point0)
+	ChannelLayoutID7Point0Front    = ChannelLayoutID(C.SoundIoChannelLayoutId7Point0Front)
+	ChannelLayoutID7Point1         = ChannelLayoutID(C.SoundIoChannelLayoutId7Point1)
+	ChannelLayoutID7Point1Wide     = ChannelLayoutID(C.SoundIoChannelLayoutId7Point1Wide)
+	ChannelLayoutID7Point1WideBack = ChannelLayoutID(C.SoundIoChannelLayoutId7Point1WideBack)
+	ChannelLayoutIDOctagonal       = ChannelLayoutID(C.SoundIoChannelLayoutIdOctagonal)
 )
 
 // ChannelLayoutBuiltinCount returns the number of builtin channel layouts.
