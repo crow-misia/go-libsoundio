@@ -19,24 +19,24 @@ type ChannelAreas struct {
 	frameCount   int
 }
 
-// GetChannelCount returns channel count.
-func (a *ChannelAreas) GetChannelCount() int {
+// ChannelCount returns channel count.
+func (a *ChannelAreas) ChannelCount() int {
 	return a.channelCount
 }
 
-// GetFrameCount returns frame count.
-func (a *ChannelAreas) GetFrameCount() int {
+// FrameCount returns frame count.
+func (a *ChannelAreas) FrameCount() int {
 	return a.frameCount
 }
 
-// GetArea returns ChannelArea.
-func (a *ChannelAreas) GetArea(channel int) *ChannelArea {
+// Area returns ChannelArea.
+func (a *ChannelAreas) Area(channel int) *ChannelArea {
 	return a.areas[channel]
 }
 
-// GetBuffer returns ChannelArea buffer.
-func (a *ChannelAreas) GetBuffer(channel int, frame int) []byte {
-	return a.areas[channel].getBuffer(frame)
+// Buffer returns ChannelArea buffer.
+func (a *ChannelAreas) Buffer(channel int, frame int) []byte {
+	return a.areas[channel].bufferWithFrame(frame)
 
 }
 func newChannelAreas(ptr *C.struct_SoundIoChannelArea, chanelCount int, frameCount int) *ChannelAreas {

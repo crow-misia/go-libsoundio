@@ -12,6 +12,7 @@ package soundio
 */
 import "C"
 
+// DeviceAim is device aim.
 type DeviceAim uint32
 
 const (

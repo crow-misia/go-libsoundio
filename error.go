@@ -12,6 +12,7 @@ package soundio
 */
 import "C"
 
+// Error is libsoundio error.
 type Error int
 
 // libsoundio error

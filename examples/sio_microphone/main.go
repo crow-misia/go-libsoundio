@@ -115,7 +115,7 @@ func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCoun
 		count := getDeviceCount(s)
 		for i := 0; i < count; i++ {
 			device := getDevice(s, i)
-			if device.IsRaw() == isRaw && deviceId == device.GetID() {
+			if device.Raw() == isRaw && deviceId == device.ID() {
 				selectedDevice = device
 				break
 			}
@@ -158,15 +158,15 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	}, func(io *soundio.SoundIo) int {
 		return io.DefaultInputDeviceIndex()
 	}, func(io *soundio.SoundIo, index int) *soundio.Device {
-		return io.GetInputDevice(index)
+		return io.InputDevice(index)
 	})
 	if err != nil {
 		return err
 	}
 	defer selectedInputDevice.RemoveReference()
-	log.Printf("Input device: %s", selectedInputDevice.GetName())
-	if selectedInputDevice.GetProbeError() != nil {
-		return fmt.Errorf("unable to probe device: %s", selectedInputDevice.GetProbeError())
+	log.Printf("Input device: %s", selectedInputDevice.Name())
+	if selectedInputDevice.ProbeError() != nil {
+		return fmt.Errorf("unable to probe device: %s", selectedInputDevice.ProbeError())
 	}
 
 	selectedOutputDevice, err := selectDevice(s, outputDeviceId, outputIsRaw, func(io *soundio.SoundIo) int {
@@ -174,15 +174,15 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	}, func(io *soundio.SoundIo) int {
 		return io.DefaultOutputDeviceIndex()
 	}, func(io *soundio.SoundIo, index int) *soundio.Device {
-		return io.GetOutputDevice(index)
+		return io.OutputDevice(index)
 	})
 	if err != nil {
 		return err
 	}
 	defer selectedOutputDevice.RemoveReference()
-	log.Printf("Output device: %s", selectedOutputDevice.GetName())
-	if selectedOutputDevice.GetProbeError() != nil {
-		return fmt.Errorf("unable to probe device: %s", selectedOutputDevice.GetProbeError())
+	log.Printf("Output device: %s", selectedOutputDevice.Name())
+	if selectedOutputDevice.ProbeError() != nil {
+		return fmt.Errorf("unable to probe device: %s", selectedOutputDevice.ProbeError())
 	}
 
 	selectedOutputDevice.SortChannelLayouts()
@@ -217,7 +217,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 
 	var ringBuffer *rbuf.FixedSizeRingBuf
 
-	instream := selectedInputDevice.InStreamCreate()
+	instream := selectedInputDevice.NewInStream()
 	defer instream.Destroy()
 	instream.SetFormat(format)
 	instream.SetLayout(layout)
@@ -230,7 +230,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			writeFrames = frameCountMax
 		}
 
-		channelCount := stream.GetLayout().GetChannelCount()
+		channelCount := stream.Layout().ChannelCount()
 		frameLeft := writeFrames
 
 		for {
@@ -245,11 +245,11 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 				break
 			}
 			if areas == nil {
-				_, _ = ringBuffer.Write(make([]byte, frameCount*instream.GetBytesPerFrame()))
+				_, _ = ringBuffer.Write(make([]byte, frameCount*instream.BytesPerFrame()))
 			} else {
 				for frame := 0; frame < frameCount; frame++ {
 					for ch := 0; ch < channelCount; ch++ {
-						buffer := areas.GetBuffer(ch, frame)
+						buffer := areas.Buffer(ch, frame)
 						_, _ = ringBuffer.Write(buffer)
 					}
 				}
@@ -271,11 +271,11 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return fmt.Errorf("unable to open input device: %s", err)
 	}
 
-	outstream := selectedOutputDevice.OutStreamCreate()
+	outstream := selectedOutputDevice.NewOutStream()
 	defer outstream.Destroy()
 	log.Printf("format: %s", format)
-	log.Printf("layout name: %s", layout.GetName())
-	log.Printf("layout channel count: %d", layout.GetChannelCount())
+	log.Printf("layout name: %s", layout.Name())
+	log.Printf("layout channel count: %d", layout.ChannelCount())
 	log.Printf("sample rate: %d", sampleRate)
 	log.Printf("latency seconds: %f sec", latencySec)
 	outstream.SetFormat(format)
@@ -284,9 +284,9 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	outstream.SetSoftwareLatency(latencySec)
 	outstream.SetWriteCallback(func(stream *soundio.OutStream, frameCountMin int, frameCountMax int) {
 		fillbytes := ringBuffer.Readable
-		fillCount := fillbytes / stream.GetBytesPerFrame()
+		fillCount := fillbytes / stream.BytesPerFrame()
 
-		channelCount := stream.GetLayout().GetChannelCount()
+		channelCount := stream.Layout().ChannelCount()
 
 		if frameCountMin > fillCount {
 			// Ring buffer does not have enough data, fill with zeroes.
@@ -304,7 +304,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			zeroArray := make([]byte, 16)
 			for frame := 0; frame < frameCount; frame++ {
 				for ch := 0; ch < channelCount; ch++ {
-					buffer := areas.GetBuffer(ch, frame)
+					buffer := areas.Buffer(ch, frame)
 					copy(buffer, zeroArray)
 				}
 			}
@@ -334,7 +334,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			}
 			for frame := 0; frame < frameCount; frame++ {
 				for ch := 0; ch < channelCount; ch++ {
-					buffer := areas.GetBuffer(ch, frame)
+					buffer := areas.Buffer(ch, frame)
 					_, _ = ringBuffer.Read(buffer)
 				}
 			}
@@ -355,7 +355,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return fmt.Errorf("unable to open output device: %s", err)
 	}
 
-	capacity := int(latencySec * 2 * float64(instream.GetSampleRate()*instream.GetBytesPerFrame()))
+	capacity := int(latencySec * 2 * float64(instream.SampleRate()*instream.BytesPerFrame()))
 	ringBuffer = rbuf.NewFixedSizeRingBuf(capacity)
 
 	err = instream.Start()

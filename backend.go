@@ -12,6 +12,7 @@ package soundio
 */
 import "C"
 
+// Backend type
 type Backend uint32
 
 const (

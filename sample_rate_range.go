@@ -19,18 +19,18 @@ type SampleRateRange struct {
 
 // fields
 
-// GetMin returns sample rate minimal.
-func (r *SampleRateRange) GetMin() int {
-	p := r.getPointer()
+// Min returns sample rate minimal.
+func (r *SampleRateRange) Min() int {
+	p := r.pointer()
 	return int(p.min)
 }
 
-// GetMax returns sample rate maximal.
-func (r *SampleRateRange) GetMax() int {
-	p := r.getPointer()
+// Max returns sample rate maximal.
+func (r *SampleRateRange) Max() int {
+	p := r.pointer()
 	return int(p.max)
 }
 
-func (r *SampleRateRange) getPointer() *C.struct_SoundIoSampleRateRange {
+func (r *SampleRateRange) pointer() *C.struct_SoundIoSampleRateRange {
 	return (*C.struct_SoundIoSampleRateRange)(unsafe.Pointer(r.ptr))
 }

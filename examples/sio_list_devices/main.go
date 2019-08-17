@@ -70,10 +70,10 @@ func parseBackend(str string) (soundio.Backend, error) {
 }
 
 func printChannelLayout(layout *soundio.ChannelLayout) {
-	name := layout.GetName()
+	name := layout.Name()
 	if len(name) == 0 {
-		names := make([]string, layout.GetChannelCount())
-		for i, channel := range layout.GetChannels() {
+		names := make([]string, layout.ChannelCount())
+		for i, channel := range layout.Channels() {
 			names[i] = fmt.Sprint(channel)
 		}
 		log.Printf("    %s", strings.Join(names, ", "))
@@ -89,52 +89,52 @@ func printDevice(device *soundio.Device, shortOutput bool, isDefault bool) {
 	}
 
 	rawStr := ""
-	if device.IsRaw() {
+	if device.Raw() {
 		rawStr = " (raw)"
 	}
 
-	log.Printf("%s%s%s", device.GetName(), defaultStr, rawStr)
+	log.Printf("%s%s%s", device.Name(), defaultStr, rawStr)
 	if shortOutput {
 		return
 	}
 
-	log.Printf("  id: %s", device.GetID())
+	log.Printf("  id: %s", device.ID())
 
-	if device.GetProbeError() == nil {
+	if device.ProbeError() == nil {
 		log.Println("  channel layouts:")
-		for _, layout := range device.GetLayouts() {
+		for _, layout := range device.Layouts() {
 			printChannelLayout(layout)
 		}
-		if device.GetCurrentLayout().GetChannelCount() > 0 {
+		if device.CurrentLayout().ChannelCount() > 0 {
 			log.Print("  current layout: ")
-			printChannelLayout(device.GetCurrentLayout())
+			printChannelLayout(device.CurrentLayout())
 		}
 
 		log.Println("  sample rates:")
-		for _, rate := range device.GetSampleRates() {
-			log.Printf("    %d - %d", rate.GetMin(), rate.GetMax())
+		for _, rate := range device.SampleRates() {
+			log.Printf("    %d - %d", rate.Min(), rate.Max())
 		}
-		if device.GetSampleRateCurrent() > 0 {
-			log.Printf("  current sample rate: %d", device.GetSampleRateCurrent())
+		if device.SampleRateCurrent() > 0 {
+			log.Printf("  current sample rate: %d", device.SampleRateCurrent())
 		}
 
-		formats := make([]string, device.GetFormatCount())
-		for i, format := range device.GetFormats() {
+		formats := make([]string, device.FormatCount())
+		for i, format := range device.Formats() {
 			formats[i] = fmt.Sprint(format)
 		}
 		log.Printf("  formats: %s", strings.Join(formats, ", "))
 
-		if device.GetCurrentFormat() != soundio.FormatInvalid {
-			log.Printf("  current format: %s", device.GetCurrentFormat())
+		if device.CurrentFormat() != soundio.FormatInvalid {
+			log.Printf("  current format: %s", device.CurrentFormat())
 		}
 
-		log.Printf("  min software latency: %0.8f sec", device.GetSoftwareLatencyMin())
-		log.Printf("  max software latency: %0.8f sec", device.GetSoftwareLatencyMax())
-		if device.GetSoftwareLatencyCurrent() != 0.0 {
-			log.Printf("  current software latency: %0.8f sec", device.GetSoftwareLatencyCurrent())
+		log.Printf("  min software latency: %0.8f sec", device.SoftwareLatencyMin())
+		log.Printf("  max software latency: %0.8f sec", device.SoftwareLatencyMax())
+		if device.SoftwareLatencyCurrent() != 0.0 {
+			log.Printf("  current software latency: %0.8f sec", device.SoftwareLatencyCurrent())
 		}
 	} else {
-		log.Printf("  probe error: %s", device.GetProbeError())
+		log.Printf("  probe error: %s", device.ProbeError())
 	}
 
 	log.Println()
@@ -149,14 +149,14 @@ func listDevices(s *soundio.SoundIo, shortOutput bool) {
 
 	log.Println("--------Input Devices--------")
 	for i := 0; i < inputCount; i++ {
-		device := s.GetInputDevice(i)
+		device := s.InputDevice(i)
 		printDevice(device, shortOutput, defaultInput == i)
 		device.RemoveReference()
 	}
 
 	log.Println("--------Output Devices--------")
 	for i := 0; i < outputCount; i++ {
-		device := s.GetOutputDevice(i)
+		device := s.OutputDevice(i)
 		printDevice(device, shortOutput, defaultOutput == i)
 		device.RemoveReference()
 	}

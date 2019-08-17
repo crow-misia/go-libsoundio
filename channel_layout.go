@@ -15,6 +15,7 @@ package soundio
 import "C"
 import "unsafe"
 
+// ChannelLayoutID is channel layout id
 type ChannelLayoutID uint32
 
 type ChannelLayout struct {
@@ -58,41 +59,41 @@ func ChannelLayoutBuiltinCount() int {
 // ChannelLayoutGetBuiltin returns a builtin channel layout.
 // 0 <= `index` < ChannelLayoutBuiltinCount
 func ChannelLayoutGetBuiltin(index ChannelLayoutID) *ChannelLayout {
-	return createChannelLayout(C.soundio_channel_layout_get_builtin(C.int(index)))
+	return newChannelLayout(C.soundio_channel_layout_get_builtin(C.int(index)))
 }
 
 // ChannelLayoutGetDefault returns the default builtin channel layout for the given number of channels.
 func ChannelLayoutGetDefault(channelCount int) *ChannelLayout {
-	return createChannelLayout(C.soundio_channel_layout_get_default(C.int(channelCount)))
+	return newChannelLayout(C.soundio_channel_layout_get_default(C.int(channelCount)))
 }
 
 // BestMatchingLayout returns NULL if none matches.
 // Iterates over preferredLayouts. Returns the first channel layout in
 // preferredLayouts which matches one of the channel layouts in availableLayouts.
 func BestMatchingLayout(device1 *Device, device2 *Device) *ChannelLayout {
-	device1Ptr := device1.getPointer()
-	device2Ptr := device1.getPointer()
+	device1Ptr := device1.pointer()
+	device2Ptr := device1.pointer()
 
-	return createChannelLayout(C.soundio_best_matching_channel_layout(device1Ptr.layouts, device1Ptr.layout_count, device2Ptr.layouts, device2Ptr.layout_count))
+	return newChannelLayout(C.soundio_best_matching_channel_layout(device1Ptr.layouts, device1Ptr.layout_count, device2Ptr.layouts, device2Ptr.layout_count))
 }
 
 // fields
 
-// GetName returns channel layout name.
-func (l *ChannelLayout) GetName() string {
-	p := l.getPointer()
+// Name returns channel layout name.
+func (l *ChannelLayout) Name() string {
+	p := l.pointer()
 	return C.GoString(p.name)
 }
 
-// GetChannelCount returns channel count.
-func (l *ChannelLayout) GetChannelCount() int {
-	p := l.getPointer()
+// ChannelCount returns channel count.
+func (l *ChannelLayout) ChannelCount() int {
+	p := l.pointer()
 	return int(p.channel_count)
 }
 
-// GetChannels returns list of channelID.
-func (l *ChannelLayout) GetChannels() []ChannelID {
-	p := l.getPointer()
+// Channels returns list of channelID.
+func (l *ChannelLayout) Channels() []ChannelID {
+	p := l.pointer()
 	channels := make([]ChannelID, MaxChannels)
 	for i := range channels {
 		channels[i] = ChannelID(uint32(p.channels[i]))
@@ -104,31 +105,31 @@ func (l *ChannelLayout) GetChannels() []ChannelID {
 
 // FindChannel returns the index of `channel` in `layout`, or `-1` if not found.
 func (l *ChannelLayout) FindChannel(channel ChannelID) int {
-	return int(C.soundio_channel_layout_find_channel(l.getPointer(), uint32(channel)))
+	return int(C.soundio_channel_layout_find_channel(l.pointer(), uint32(channel)))
 }
 
 // DetectBuiltin returns whether it found a match.
 // Populates the name field of layout if it matches a builtin one.
 func (l *ChannelLayout) DetectBuiltin() bool {
-	return bool(C.soundio_channel_layout_detect_builtin(l.getPointer()))
+	return bool(C.soundio_channel_layout_detect_builtin(l.pointer()))
 }
 
 // Equal returns whether the channel count field and each channel id matches in
 // the supplied channel layouts.
 func (l *ChannelLayout) Equal(o *ChannelLayout) bool {
-	return bool(C.soundio_channel_layout_equal(l.getPointer(), o.getPointer()))
+	return bool(C.soundio_channel_layout_equal(l.pointer(), o.pointer()))
 }
 
 // SortChannelLayouts sorts by channel count, descending.
 func (l *ChannelLayout) SortChannelLayouts(layoutCount int) {
-	C.soundio_sort_channel_layouts(l.getPointer(), C.int(layoutCount))
+	C.soundio_sort_channel_layouts(l.pointer(), C.int(layoutCount))
 }
 
-func (l *ChannelLayout) getPointer() *C.struct_SoundIoChannelLayout {
+func (l *ChannelLayout) pointer() *C.struct_SoundIoChannelLayout {
 	return (*C.struct_SoundIoChannelLayout)(unsafe.Pointer(l.ptr))
 }
 
-func createChannelLayout(l *C.struct_SoundIoChannelLayout) *ChannelLayout {
+func newChannelLayout(l *C.struct_SoundIoChannelLayout) *ChannelLayout {
 	return &ChannelLayout{
 		ptr: uintptr(unsafe.Pointer(l)),
 	}

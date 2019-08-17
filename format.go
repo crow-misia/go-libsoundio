@@ -12,6 +12,7 @@ package soundio
 */
 import "C"
 
+// Format is audio format.
 type Format uint32
 
 const (

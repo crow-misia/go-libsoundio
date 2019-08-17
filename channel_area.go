@@ -23,20 +23,20 @@ type ChannelArea struct {
 
 // fields
 
-// GetBuffer returns buffer.
-func (a *ChannelArea) GetBuffer() []byte {
+// Buffer returns buffer.
+func (a *ChannelArea) Buffer() []byte {
 	return a.buffer
 }
 
-func (a *ChannelArea) getBuffer(frame int) []byte {
+func (a *ChannelArea) bufferWithFrame(frame int) []byte {
 	step := a.step
 	offset := frame * a.step
 	return a.buffer[offset : offset+step]
 }
 
-// GetStep returns ow many bytes it takes to get from the beginning of one sample to
+// Step returns ow many bytes it takes to get from the beginning of one sample to
 // the beginning of the next sample.
-func (a *ChannelArea) GetStep() int {
+func (a *ChannelArea) Step() int {
 	return a.step
 }
 

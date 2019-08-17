@@ -14,6 +14,7 @@ package soundio
 import "C"
 import "unsafe"
 
+// ChannelID is channel id.
 type ChannelID uint32
 
 const (
