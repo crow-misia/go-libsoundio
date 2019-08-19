@@ -16,15 +16,10 @@ git clone https://github.com/andrewrk/libsoundio.git
 cd libsoundio
 mkdir build
 cd build
-cmake .. -G"MSYS Makefiles"
+cmake -G"MSYS Makefiles" -D CMAKE_INSTALL_PREFIX=/mingw64 ..
 make
+make install
 ```
-
-copy `soundio/endian.h` and `soundio/soundio.h` to `[[MSYS Path]]/mingw64/include/soundio/`
-
-copy `build/libsoundio.a` and `build/libsoundio.dll.a` to `[[MSYS Path]]/mingw64/lib/`
-
-copy `build/libsoundio.dll` `[[Windows Path]]/system32/`
 
 ### Go build
 
