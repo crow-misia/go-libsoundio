@@ -85,8 +85,12 @@ func realMain(ctx context.Context) error {
 	defaultOutputDeviceIndex := s.DefaultOutputDeviceIndex()
 	log.Printf("Default Output Device Index = %d", defaultOutputDeviceIndex)
 
-	device := s.OutputDevice(defaultOutputDeviceIndex)
+	device, err := s.OutputDevice(defaultOutputDeviceIndex)
+	if err != nil {
+		return err
+	}
 	defer device.RemoveReference()
+
 	log.Println("Device")
 	log.Printf("  ID = %s", device.ID())
 	log.Printf("  Aim = %s", device.Aim())

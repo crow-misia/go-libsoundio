@@ -110,12 +110,16 @@ func parseBackend(str string) (soundio.Backend, error) {
 	}
 }
 
-func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCount func(io *soundio.SoundIo) int, getDefaultIndex func(io *soundio.SoundIo) int, getDevice func(io *soundio.SoundIo, index int) *soundio.Device) (*soundio.Device, error) {
+func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCount func(io *soundio.SoundIo) int, getDefaultIndex func(io *soundio.SoundIo) int, getDevice func(io *soundio.SoundIo, index int) (*soundio.Device, error)) (*soundio.Device, error) {
 	var selectedDevice *soundio.Device
+	var err error
 	if len(deviceId) > 0 {
 		count := getDeviceCount(s)
 		for i := 0; i < count; i++ {
-			device := getDevice(s, i)
+			device, err := getDevice(s, i)
+			if err != nil {
+				return nil, err
+			}
 			if device.Raw() == isRaw && deviceId == device.ID() {
 				selectedDevice = device
 				break
@@ -127,7 +131,10 @@ func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCoun
 		}
 	} else {
 		deviceIndex := getDefaultIndex(s)
-		selectedDevice = getDevice(s, deviceIndex)
+		selectedDevice, err = getDevice(s, deviceIndex)
+		if err != nil {
+			return nil, err
+		}
 		if selectedDevice == nil {
 			return nil, errors.New("no input devices available")
 		}
@@ -158,7 +165,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 		return io.InputDeviceCount()
 	}, func(io *soundio.SoundIo) int {
 		return io.DefaultInputDeviceIndex()
-	}, func(io *soundio.SoundIo, index int) *soundio.Device {
+	}, func(io *soundio.SoundIo, index int) (*soundio.Device, error) {
 		return io.InputDevice(index)
 	})
 	if err != nil {
@@ -221,6 +228,10 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 
 		for {
 			frameCount := frameLeft
+			if frameCount <= 0 {
+				break
+			}
+
 			areas, err := stream.BeginRead(&frameCount)
 			if err != nil {
 				log.Printf("begin read error: %s", err)
@@ -236,16 +247,21 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 				for frame := 0; frame < frameCount; frame++ {
 					for ch := 0; ch < channelCount; ch++ {
 						buffer := areas.Buffer(ch, frame)
-						_, _ = ringBuffer.Write(buffer)
+						_, err = ringBuffer.Write(buffer)
+						if err != nil {
+							log.Printf("ringbuffer write error: %s, len %d", err, len(buffer))
+						}
 					}
 				}
 			}
-			_ = stream.EndRead()
+			err = stream.EndRead()
+			if err != nil {
+				log.Printf("end read error: %s", err)
+				cancelParent()
+				return
+			}
 
 			frameLeft -= frameCount
-			if frameLeft <= 0 {
-				break
-			}
 		}
 	})
 	instream.SetOverflowCallback(func(stream *soundio.InStream) {

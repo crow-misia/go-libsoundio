@@ -11,7 +11,10 @@ package soundio
 #include <soundio/soundio.h>
 */
 import "C"
-import "unsafe"
+import (
+	"sync/atomic"
+	"unsafe"
+)
 
 type SampleRateRange struct {
 	ptr uintptr
@@ -22,15 +25,28 @@ type SampleRateRange struct {
 // Min returns sample rate minimal.
 func (r *SampleRateRange) Min() int {
 	p := r.pointer()
+	if p == nil {
+		return 0
+	}
 	return int(p.min)
 }
 
 // Max returns sample rate maximal.
 func (r *SampleRateRange) Max() int {
 	p := r.pointer()
+	if p == nil {
+		return 0
+	}
 	return int(p.max)
 }
 
 func (r *SampleRateRange) pointer() *C.struct_SoundIoSampleRateRange {
-	return (*C.struct_SoundIoSampleRateRange)(unsafe.Pointer(r.ptr))
+	if r == nil {
+		return nil
+	}
+	p := atomic.LoadUintptr(&r.ptr)
+	if p == 0 {
+		return nil
+	}
+	return (*C.struct_SoundIoSampleRateRange)(unsafe.Pointer(p))
 }

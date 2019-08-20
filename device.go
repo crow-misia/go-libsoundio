@@ -32,7 +32,10 @@ static void setOutstreamCallback(struct SoundIoOutStream *outstream) {
 }
 */
 import "C"
-import "unsafe"
+import (
+	"sync/atomic"
+	"unsafe"
+)
 
 // Device is input/output device.
 type Device struct {
@@ -92,18 +95,27 @@ func outstreamErrorCallbackDelegate(nativeStream *C.struct_SoundIoOutStream, err
 // ID returns device id.
 func (d *Device) ID() string {
 	p := d.pointer()
+	if p == nil {
+		return ""
+	}
 	return C.GoString(p.id)
 }
 
 // Name returns device name.
 func (d *Device) Name() string {
 	p := d.pointer()
+	if p == nil {
+		return ""
+	}
 	return C.GoString(p.name)
 }
 
 // Aim returns whether this device is an input device or an output device.
 func (d *Device) Aim() DeviceAim {
 	p := d.pointer()
+	if p == nil {
+		return deviceAimUnknown
+	}
 	return DeviceAim(uint32(p.aim))
 }
 
@@ -115,6 +127,9 @@ func (d *Device) Aim() DeviceAim {
 // Devices are guaranteed to have at least 1 channel layout.
 func (d *Device) Layouts() []*ChannelLayout {
 	p := d.pointer()
+	if p == nil {
+		return make([]*ChannelLayout, 0)
+	}
 	count := int(p.layout_count)
 	layouts := make([]*ChannelLayout, count)
 	size := C.sizeof_struct_SoundIoChannelLayout
@@ -130,18 +145,27 @@ func (d *Device) Layouts() []*ChannelLayout {
 // LayoutCount returns how many formats are available in GetLayouts.
 func (d *Device) LayoutCount() int {
 	p := d.pointer()
+	if p == nil {
+		return 0
+	}
 	return int(p.layout_count)
 }
 
 // CurrentLayout returns current layout.
 func (d *Device) CurrentLayout() *ChannelLayout {
 	p := d.pointer()
+	if p == nil {
+		return nil
+	}
 	return newChannelLayout(&p.current_layout)
 }
 
 // Formats returns list of formats this device supports.
 func (d *Device) Formats() []Format {
 	p := d.pointer()
+	if p == nil {
+		return make([]Format, 0)
+	}
 	count := int(p.format_count)
 	formats := make([]Format, count)
 	size := C.sizeof_int
@@ -156,18 +180,27 @@ func (d *Device) Formats() []Format {
 // FormatCount returns how many formats are available in GetFormats.
 func (d *Device) FormatCount() int {
 	p := d.pointer()
+	if p == nil {
+		return 0
+	}
 	return int(p.format_count)
 }
 
 // CurrentFormat returns current format.
 func (d *Device) CurrentFormat() Format {
 	p := d.pointer()
+	if p == nil {
+		return FormatInvalid
+	}
 	return Format(uint32(p.current_format))
 }
 
 // SampleRates returns list of sample rate this device supports.
 func (d *Device) SampleRates() []SampleRateRange {
 	p := d.pointer()
+	if p == nil {
+		return make([]SampleRateRange, 0)
+	}
 	count := int(p.sample_rate_count)
 	rates := make([]SampleRateRange, count)
 	size := C.sizeof_struct_SoundIoSampleRateRange
@@ -183,12 +216,18 @@ func (d *Device) SampleRates() []SampleRateRange {
 // SampleRateCount returns how many sample rate are available in GetSampleRates.
 func (d *Device) SampleRateCount() int {
 	p := d.pointer()
+	if p == nil {
+		return 0
+	}
 	return int(p.sample_rate_count)
 }
 
 // SampleRateCurrent returns current sample rate.
 func (d *Device) SampleRateCurrent() int {
 	p := d.pointer()
+	if p == nil {
+		return 0
+	}
 	return int(p.sample_rate_current)
 }
 
@@ -197,6 +236,9 @@ func (d *Device) SampleRateCurrent() int {
 // For PulseAudio and WASAPI this value is unknown until you open a stream.
 func (d *Device) SoftwareLatencyMin() float64 {
 	p := d.pointer()
+	if p == nil {
+		return 0.0
+	}
 	return float64(p.software_latency_min)
 }
 
@@ -205,6 +247,9 @@ func (d *Device) SoftwareLatencyMin() float64 {
 // For PulseAudio and WASAPI this value is unknown until you open a stream.
 func (d *Device) SoftwareLatencyMax() float64 {
 	p := d.pointer()
+	if p == nil {
+		return 0.0
+	}
 	return float64(p.software_latency_max)
 }
 
@@ -213,6 +258,9 @@ func (d *Device) SoftwareLatencyMax() float64 {
 // For PulseAudio and WASAPI this value is unknown until you open a stream.
 func (d *Device) SoftwareLatencyCurrent() float64 {
 	p := d.pointer()
+	if p == nil {
+		return 0.0
+	}
 	return float64(p.software_latency_current)
 }
 
@@ -223,12 +271,18 @@ func (d *Device) SoftwareLatencyCurrent() float64 {
 // resampling and thus tend to have fewer formats available.
 func (d *Device) Raw() bool {
 	p := d.pointer()
+	if p == nil {
+		return false
+	}
 	return bool(p.is_raw)
 }
 
 // RefCount returns number of devices referenced.
 func (d *Device) RefCount() int {
 	p := d.pointer()
+	if p == nil {
+		return 0
+	}
 	return int(p.ref_count)
 }
 
@@ -242,6 +296,9 @@ func (d *Device) RefCount() int {
 // * ErrorNoMem
 func (d *Device) ProbeError() error {
 	p := d.pointer()
+	if p == nil {
+		return errorUninitialized
+	}
 	return convertToError(p.probe_error)
 }
 
@@ -249,50 +306,88 @@ func (d *Device) ProbeError() error {
 
 // AddReference is increments the device's reference count.
 func (d *Device) AddReference() {
-	C.soundio_device_ref(d.pointer())
+	p := d.pointer()
+	if p == nil {
+		return
+	}
+	C.soundio_device_ref(p)
 }
 
 // RemoveReference is decrements the device's reference count.
 func (d *Device) RemoveReference() {
-	C.soundio_device_unref(d.pointer())
+	p := d.pointer()
+	if p == nil {
+		return
+	}
+	C.soundio_device_unref(p)
 }
 
 // Equal returns true if and only if the devices have the same GetID,
 // IsRaw, and GetAim are the same.
 func (d *Device) Equal(o *Device) bool {
-	return bool(C.soundio_device_equal(d.pointer(), o.pointer()))
+	p := d.pointer()
+	op := o.pointer()
+	if p == nil || op == nil {
+		return false
+	}
+	return bool(C.soundio_device_equal(p, op))
 }
 
 // SortChannelLayouts sorts channel layouts by channel count, descending.
 func (d *Device) SortChannelLayouts() {
-	C.soundio_device_sort_channel_layouts(d.pointer())
+	p := d.pointer()
+	if p == nil {
+		return
+	}
+	C.soundio_device_sort_channel_layouts(p)
 }
 
 // SupportsFormat returns whether `format` is included in the device's supported formats.
 func (d *Device) SupportsFormat(format Format) bool {
-	return bool(C.soundio_device_supports_format(d.pointer(), uint32(format)))
+	p := d.pointer()
+	if p == nil {
+		return false
+	}
+	return bool(C.soundio_device_supports_format(p, uint32(format)))
 }
 
 // SupportsLayout returns whether `layout` is included in the device's supported channel layouts.
 func (d *Device) SupportsLayout(layout ChannelLayout) bool {
-	return bool(C.soundio_device_supports_layout(d.pointer(), layout.pointer()))
+	p := d.pointer()
+	if p == nil {
+		return false
+	}
+	return bool(C.soundio_device_supports_layout(p, layout.pointer()))
 }
 
 // SupportsSampleRate returns whether `sampleRate` is included in the device's supported sample rates.
 func (d *Device) SupportsSampleRate(sampleRate int) bool {
-	return bool(C.soundio_device_supports_sample_rate(d.pointer(), C.int(sampleRate)))
+	p := d.pointer()
+	if p == nil {
+		return false
+	}
+	return bool(C.soundio_device_supports_sample_rate(p, C.int(sampleRate)))
 }
 
 // NearestSampleRate returns the available sample rate nearest to sampleRate, rounding up.
 func (d *Device) NearestSampleRate(sampleRate int) int {
-	return int(C.soundio_device_nearest_sample_rate(d.pointer(), C.int(sampleRate)))
+	p := d.pointer()
+	if p == nil {
+		return 0
+	}
+	return int(C.soundio_device_nearest_sample_rate(p, C.int(sampleRate)))
 }
 
 // NewInStream allocates memory and sets defaults.
 // Next you should fill out the struct fields and then call Open function.
 // Sets all fields to defaults.
 func (d *Device) NewInStream() *InStream {
-	ptr := C.soundio_instream_create(d.pointer())
+	p := d.pointer()
+	if p == nil {
+		return nil
+	}
+
+	ptr := C.soundio_instream_create(p)
 	stream := &InStream{
 		ptr:    uintptr(unsafe.Pointer(ptr)),
 		device: d,
@@ -306,7 +401,12 @@ func (d *Device) NewInStream() *InStream {
 // Next you should fill out the struct fields and then call Open function.
 // Sets all fields to defaults.
 func (d *Device) NewOutStream() *OutStream {
-	ptr := C.soundio_outstream_create(d.pointer())
+	p := d.pointer()
+	if p == nil {
+		return nil
+	}
+
+	ptr := C.soundio_outstream_create(p)
 	stream := &OutStream{
 		ptr:    uintptr(unsafe.Pointer(ptr)),
 		device: d,
@@ -317,5 +417,18 @@ func (d *Device) NewOutStream() *OutStream {
 }
 
 func (d *Device) pointer() *C.struct_SoundIoDevice {
-	return (*C.struct_SoundIoDevice)(unsafe.Pointer(d.ptr))
+	if d == nil {
+		return nil
+	}
+	p := atomic.LoadUintptr(&d.ptr)
+	if p == 0 {
+		return nil
+	}
+	return (*C.struct_SoundIoDevice)(unsafe.Pointer(p))
+}
+
+func newDevice(p *C.struct_SoundIoDevice) *Device {
+	return &Device{
+		ptr: uintptr(unsafe.Pointer(p)),
+	}
 }

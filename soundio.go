@@ -24,7 +24,10 @@ static void setSoundIoCallback(struct SoundIo *io) {
 }
 */
 import "C"
-import "unsafe"
+import (
+	"sync/atomic"
+	"unsafe"
+)
 
 const (
 	// MaxChannels is suppor channel max count.
@@ -68,12 +71,18 @@ func soundioOnEventsSignal(nativeIo *C.struct_SoundIo) {
 // CurrentBackend returns current backend.
 func (s *SoundIo) CurrentBackend() Backend {
 	p := s.pointer()
+	if p == nil {
+		return BackendNone
+	}
 	return Backend(int(p.current_backend))
 }
 
 // AppName returns application name.
 func (s *SoundIo) AppName() string {
 	p := s.pointer()
+	if p == nil {
+		return ""
+	}
 	return C.GoString(p.app_name)
 }
 
@@ -82,12 +91,16 @@ func (s *SoundIo) AppName() string {
 // JACK uses this for `client_name`.
 // Must not contain a colon (":").
 func (s *SoundIo) SetAppName(name string) {
+	p := s.pointer()
+	if p == nil {
+		return
+	}
 	if s.appNamePtr != 0 {
 		C.free(unsafe.Pointer(s.appNamePtr))
 	}
-	p := s.pointer()
-	p.app_name = C.CString(name)
-	s.appNamePtr = uintptr(unsafe.Pointer(p.app_name))
+	ptr := C.CString(name)
+	p.app_name = ptr
+	s.appNamePtr = uintptr(unsafe.Pointer(ptr))
 }
 
 // functions
@@ -162,105 +175,170 @@ func (s *SoundIo) SetOnEventsSignal(callback func(*SoundIo)) {
 
 // Destroy releases resources.
 func (s *SoundIo) Destroy() {
-	if s.ptr != 0 {
-		p := s.pointer()
+	ptr := atomic.SwapUintptr(&s.ptr, 0)
+
+	if ptr != 0 {
+		p := (*C.struct_SoundIo)(unsafe.Pointer(ptr))
+		C.soundio_destroy(p)
+
 		if s.appNamePtr != 0 {
 			C.free(unsafe.Pointer(s.appNamePtr))
 		}
-		C.soundio_destroy(p)
-		s.ptr = 0
 	}
 }
 
 // Connect tries to connect on all available backends in order.
 func (s *SoundIo) Connect() error {
-	return convertToError(C.soundio_connect(s.pointer()))
+	p := s.pointer()
+	if p == nil {
+		return errorUninitialized
+	}
+	return convertToError(C.soundio_connect(p))
 }
 
 // ConnectBackend connect to backend.
 // Instead of calling Connect function you may call this function to try a specific backend.
 func (s *SoundIo) ConnectBackend(backend Backend) error {
-	return convertToError(C.soundio_connect_backend(s.pointer(), uint32(backend)))
+	p := s.pointer()
+	if p == nil {
+		return errorUninitialized
+	}
+	return convertToError(C.soundio_connect_backend(p, uint32(backend)))
 }
 
 // Disconnect disconnect from backend.
 func (s *SoundIo) Disconnect() {
-	C.soundio_disconnect(s.pointer())
+	p := s.pointer()
+	if p == nil {
+		return
+	}
+	C.soundio_disconnect(p)
 }
 
 // BackendCount returns the number of available backends.
 func (s *SoundIo) BackendCount() int {
-	return int(C.soundio_backend_count(s.pointer()))
+	p := s.pointer()
+	if p == nil {
+		return 0
+	}
+	return int(C.soundio_backend_count(p))
 }
 
 // Backend returns the available backend at the specified index (0 <= index < BackendCount)
 func (s *SoundIo) Backend(index int) Backend {
-	return Backend(C.soundio_get_backend(s.pointer(), C.int(index)))
+	p := s.pointer()
+	if p == nil {
+		return BackendNone
+	}
+	return Backend(C.soundio_get_backend(p, C.int(index)))
 }
 
 // FlushEvents atomically updates information for all connected devices.
 func (s *SoundIo) FlushEvents() {
-	C.soundio_flush_events(s.pointer())
+	p := s.pointer()
+	if p == nil {
+		return
+	}
+	C.soundio_flush_events(p)
 }
 
 // WaitEvents calls FlushEvents then blocks until another event
 // is ready or you call Wakeup. Be ready for spurious wakeups.
 func (s *SoundIo) WaitEvents() {
-	C.soundio_wait_events(s.pointer())
+	p := s.pointer()
+	if p == nil {
+		return
+	}
+	C.soundio_wait_events(p)
 }
 
 // Wakeup makes WaitEvents stop blocking.
 func (s *SoundIo) Wakeup() {
-	C.soundio_wakeup(s.pointer())
+	p := s.pointer()
+	if p == nil {
+		return
+	}
+	C.soundio_wakeup(p)
 }
 
 // ForceDeviceScan rescan device If necessary.
 func (s *SoundIo) ForceDeviceScan() {
-	C.soundio_force_device_scan(s.pointer())
+	p := s.pointer()
+	if p == nil {
+		return
+	}
+	C.soundio_force_device_scan(p)
 }
 
 // InputDeviceCount returns the number of input devices.
 // Returns -1 if you never called FlushEvents.
 func (s *SoundIo) InputDeviceCount() int {
-	return int(C.soundio_input_device_count(s.pointer()))
+	p := s.pointer()
+	if p == nil {
+		return 0
+	}
+	return int(C.soundio_input_device_count(p))
 }
 
 // OutputDeviceCount returns the number of output devices.
 // Returns -1 if you never called FlushEvents.
 func (s *SoundIo) OutputDeviceCount() int {
-	return int(C.soundio_output_device_count(s.pointer()))
+	p := s.pointer()
+	if p == nil {
+		return 0
+	}
+	return int(C.soundio_output_device_count(p))
 }
 
 // InputDevice returns a device.
 // Call RemoveReference when done.
 // `index` must be 0 <= index < InputDeviceCount.
-func (s *SoundIo) InputDevice(index int) *Device {
-	return &Device{
-		ptr: uintptr(unsafe.Pointer(C.soundio_get_input_device(s.pointer(), C.int(index)))),
+func (s *SoundIo) InputDevice(index int) (*Device, error) {
+	p := s.pointer()
+	if p == nil {
+		return nil, errorUninitialized
 	}
+	return newDevice(C.soundio_get_input_device(p, C.int(index))), nil
 }
 
 // OutputDevice returns a device.
 // Call RemoveReference when done.
 // `index` must be 0 <= index < OutputDeviceCount
-func (s *SoundIo) OutputDevice(index int) *Device {
-	return &Device{
-		ptr: uintptr(unsafe.Pointer(C.soundio_get_output_device(s.pointer(), C.int(index)))),
+func (s *SoundIo) OutputDevice(index int) (*Device, error) {
+	p := s.pointer()
+	if p == nil {
+		return nil, errorUninitialized
 	}
+	return newDevice(C.soundio_get_output_device(p, C.int(index))), nil
 }
 
 // DefaultInputDeviceIndex returns the index of the default input device
 // returns -1 if there are no devices or if you never called FlushEvents.
 func (s *SoundIo) DefaultInputDeviceIndex() int {
-	return int(C.soundio_default_input_device_index(s.pointer()))
+	p := s.pointer()
+	if p == nil {
+		return 0
+	}
+	return int(C.soundio_default_input_device_index(p))
 }
 
 // DefaultOutputDeviceIndex returns the index of the default output device
 // returns -1 if there are no devices or if you never called FlushEvents.
 func (s *SoundIo) DefaultOutputDeviceIndex() int {
-	return int(C.soundio_default_output_device_index(s.pointer()))
+	p := s.pointer()
+	if p == nil {
+		return 0
+	}
+	return int(C.soundio_default_output_device_index(p))
 }
 
 func (s *SoundIo) pointer() *C.struct_SoundIo {
-	return (*C.struct_SoundIo)(unsafe.Pointer(s.ptr))
+	if s == nil {
+		return nil
+	}
+	p := atomic.LoadUintptr(&s.ptr)
+	if p == 0 {
+		return nil
+	}
+	return (*C.struct_SoundIo)(unsafe.Pointer(p))
 }

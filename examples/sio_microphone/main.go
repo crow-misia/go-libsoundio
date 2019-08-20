@@ -59,6 +59,7 @@ func main() {
 		inputIsRaw     bool
 		outputDeviceId string
 		outputIsRaw    bool
+		channels       uint
 		latencySec     float64
 	)
 	flag.NewFlagSet("help", flag.ExitOnError)
@@ -67,6 +68,7 @@ func main() {
 	flag.BoolVar(&inputIsRaw, "in-raw", false, "raw")
 	flag.StringVar(&outputDeviceId, "out-device", "", "id")
 	flag.BoolVar(&outputIsRaw, "out-raw", false, "raw")
+	flag.UintVar(&channels, "channels", 2, "channels")
 	flag.Float64Var(&latencySec, "latency-sec", 0.2, "latency seconds")
 	flag.Parse()
 
@@ -77,7 +79,7 @@ func main() {
 	} else {
 		ctx := context.Background()
 		parentCtx := signalContext(ctx)
-		err := realMain(parentCtx, enumBackend, inputDeviceId, inputIsRaw, outputDeviceId, outputIsRaw, latencySec)
+		err := realMain(parentCtx, enumBackend, inputDeviceId, inputIsRaw, outputDeviceId, outputIsRaw, channels, latencySec)
 		if err != nil {
 			exitCode = 1
 			log.Println(err)
@@ -109,12 +111,16 @@ func parseBackend(str string) (soundio.Backend, error) {
 	}
 }
 
-func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCount func(io *soundio.SoundIo) int, getDefaultIndex func(io *soundio.SoundIo) int, getDevice func(io *soundio.SoundIo, index int) *soundio.Device) (*soundio.Device, error) {
+func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCount func(io *soundio.SoundIo) int, getDefaultIndex func(io *soundio.SoundIo) int, getDevice func(io *soundio.SoundIo, index int) (*soundio.Device, error)) (*soundio.Device, error) {
 	var selectedDevice *soundio.Device
+	var err error
 	if len(deviceId) > 0 {
 		count := getDeviceCount(s)
 		for i := 0; i < count; i++ {
-			device := getDevice(s, i)
+			device, err := getDevice(s, i)
+			if err != nil {
+				return nil, err
+			}
 			if device.Raw() == isRaw && deviceId == device.ID() {
 				selectedDevice = device
 				break
@@ -126,7 +132,10 @@ func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCoun
 		}
 	} else {
 		deviceIndex := getDefaultIndex(s)
-		selectedDevice = getDevice(s, deviceIndex)
+		selectedDevice, err = getDevice(s, deviceIndex)
+		if err != nil {
+			return selectedDevice, err
+		}
 		if selectedDevice == nil {
 			return nil, errors.New("no input devices available")
 		}
@@ -134,7 +143,7 @@ func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCoun
 	return selectedDevice, nil
 }
 
-func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string, inputIsRaw bool, outputDeviceId string, outputIsRaw bool, latencySec float64) error {
+func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string, inputIsRaw bool, outputDeviceId string, outputIsRaw bool, channels uint, latencySec float64) error {
 	_, cancelParent := context.WithCancel(ctx)
 	defer cancelParent()
 
@@ -157,7 +166,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return io.InputDeviceCount()
 	}, func(io *soundio.SoundIo) int {
 		return io.DefaultInputDeviceIndex()
-	}, func(io *soundio.SoundIo, index int) *soundio.Device {
+	}, func(io *soundio.SoundIo, index int) (*soundio.Device, error) {
 		return io.InputDevice(index)
 	})
 	if err != nil {
@@ -173,7 +182,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return io.OutputDeviceCount()
 	}, func(io *soundio.SoundIo) int {
 		return io.DefaultOutputDeviceIndex()
-	}, func(io *soundio.SoundIo, index int) *soundio.Device {
+	}, func(io *soundio.SoundIo, index int) (*soundio.Device, error) {
 		return io.OutputDevice(index)
 	})
 	if err != nil {
@@ -185,6 +194,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return fmt.Errorf("unable to probe device: %s", selectedOutputDevice.ProbeError())
 	}
 
+	selectedInputDevice.SortChannelLayouts()
 	selectedOutputDevice.SortChannelLayouts()
 	layout := soundio.BestMatchingLayout(selectedOutputDevice, selectedInputDevice)
 	if layout == nil {
@@ -235,6 +245,10 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 
 		for {
 			frameCount := frameLeft
+			if frameCount <= 0 {
+				break
+			}
+
 			areas, err := stream.BeginRead(&frameCount)
 			if err != nil {
 				log.Printf("begin read error: %s", err)
@@ -254,12 +268,14 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 					}
 				}
 			}
-			_ = stream.EndRead()
+			err = stream.EndRead()
+			if err != nil {
+				log.Printf("end read error: %s", err)
+				cancelParent()
+				return
+			}
 
 			frameLeft -= frameCount
-			if frameLeft <= 0 {
-				break
-			}
 		}
 	})
 	instream.SetOverflowCallback(func(stream *soundio.InStream) {
@@ -283,7 +299,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	outstream.SetSampleRate(sampleRate)
 	outstream.SetSoftwareLatency(latencySec)
 	outstream.SetWriteCallback(func(stream *soundio.OutStream, frameCountMin int, frameCountMax int) {
-		fillbytes := ringBuffer.Readable
+		fillbytes := ringBuffer.ContigLen()
 		fillCount := fillbytes / stream.BytesPerFrame()
 
 		channelCount := stream.Layout().ChannelCount()
@@ -291,6 +307,9 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		if frameCountMin > fillCount {
 			// Ring buffer does not have enough data, fill with zeroes.
 			frameCount := frameCountMin
+			if frameCount <= 0 {
+				return
+			}
 
 			areas, err := stream.BeginWrite(&frameCount)
 			if err != nil {
@@ -311,16 +330,16 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			_ = stream.EndWrite()
 		}
 
-		readCount := frameCountMax
-		if readCount > fillCount {
-			readCount = fillCount
+		readCount := fillCount
+		if readCount > frameCountMax {
+			readCount = frameCountMax
 		}
 
 		frameLeft := readCount
 		for {
 			frameCount := frameLeft
 			if frameCount <= 0 {
-				return
+				break
 			}
 
 			areas, err := stream.BeginWrite(&frameCount)
@@ -338,24 +357,27 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 					_, _ = ringBuffer.Read(buffer)
 				}
 			}
-			_ = stream.EndWrite()
+			err = stream.EndWrite()
+			if err != nil {
+				log.Printf("end write error: %s", err)
+				cancelParent()
+				return
+			}
 
 			frameLeft -= frameCount
-			if frameLeft <= 0 {
-				break
-			}
 		}
 	})
 	outstream.SetUnderflowCallback(func(stream *soundio.OutStream) {
 		underflowCount++
-		log.Printf("underflow %d", overflowCount)
+		log.Printf("underflow %d", underflowCount)
 	})
 	err = outstream.Open()
 	if err != nil {
 		return fmt.Errorf("unable to open output device: %s", err)
 	}
 
-	capacity := int(latencySec * 2 * float64(instream.SampleRate()*instream.BytesPerFrame()))
+	capacity := int(channels) * int(latencySec*10*float64(instream.SampleRate()*instream.BytesPerFrame()))
+	log.Printf("capacity %d", capacity)
 	ringBuffer = rbuf.NewFixedSizeRingBuf(capacity)
 
 	err = instream.Start()
