@@ -208,8 +208,10 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 	defer instream.Destroy()
 	instream.SetFormat(format)
 	instream.SetSampleRate(sampleRate)
+	frameBytes := instream.Layout().ChannelCount() * instream.BytesPerFrame()
 	instream.SetReadCallback(func(stream *soundio.InStream, frameCountMin int, frameCountMax int) {
-		freeCount := ringBuffer.N - ringBuffer.Readable
+		freeBytes := ringBuffer.N - ringBuffer.Readable
+		freeCount := freeBytes / frameBytes
 		writeFrames := freeCount
 		if writeFrames > frameCountMax {
 			writeFrames = frameCountMax
@@ -265,7 +267,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 		return fmt.Errorf("unable to open input device: %s", err)
 	}
 
-	capacity := ringBufferDurationSeconds * instream.SampleRate() * instream.BytesPerFrame()
+	capacity := instream.Layout().ChannelCount() * ringBufferDurationSeconds * 5 * instream.SampleRate() * instream.BytesPerFrame()
 	ringBuffer = rbuf.NewFixedSizeRingBuf(capacity)
 
 	err = instream.Start()

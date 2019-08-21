@@ -25,6 +25,7 @@ static void setSoundIoCallback(struct SoundIo *io) {
 */
 import "C"
 import (
+	"log"
 	"runtime"
 	"unsafe"
 )
@@ -147,11 +148,14 @@ func Create() *SoundIo {
 
 // destroySoundIo releases resources.
 func destroySoundIo(s *SoundIo) {
+	log.Println("destroy SoundIO")
 	if s.appNamePtr != nil {
 		C.free(unsafe.Pointer(s.appNamePtr))
+		s.ptr = nil
 	}
 	if s.ptr != nil {
 		C.soundio_destroy(s.ptr)
+		s.ptr = nil
 	}
 }
 

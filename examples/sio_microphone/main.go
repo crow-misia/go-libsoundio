@@ -225,8 +225,9 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	instream.SetSampleRate(sampleRate)
 	instream.SetSoftwareLatency(latencySec)
 	instream.SetReadCallback(func(stream *soundio.InStream, frameCountMin int, frameCountMax int) {
+		frameBytes := layout.ChannelCount() * instream.BytesPerFrame()
 		freeBytes := ringBuffer.N - ringBuffer.Readable
-		freeCount := freeBytes / stream.BytesPerFrame()
+		freeCount := freeBytes / frameBytes
 		if frameCountMin > freeCount {
 			log.Println("ring buffer overflow")
 			return
@@ -236,7 +237,6 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			writeFrames = frameCountMax
 		}
 
-		channelCount := stream.Layout().ChannelCount()
 		frameLeft := writeFrames
 
 		for {
@@ -256,9 +256,12 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			}
 			if areas != nil {
 				for frame := 0; frame < frameCount; frame++ {
-					for ch := 0; ch < channelCount; ch++ {
+					for ch := 0; ch < channels; ch++ {
 						buffer := areas.Buffer(ch, frame)
-						_, _ = ringBuffer.Write(buffer)
+						_, err = ringBuffer.Write(buffer)
+						if err != nil {
+							log.Printf("ringbuffer write error: %s %d", err, len(buffer))
+						}
 					}
 				}
 			}
@@ -293,10 +296,10 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	outstream.SetSampleRate(sampleRate)
 	outstream.SetSoftwareLatency(latencySec)
 	outstream.SetWriteCallback(func(stream *soundio.OutStream, frameCountMin int, frameCountMax int) {
-		fillBytes := ringBuffer.Readable
-		fillCount := fillBytes / stream.BytesPerFrame()
-
 		channelCount := stream.Layout().ChannelCount()
+
+		fillBytes := ringBuffer.Readable
+		fillCount := fillBytes / (stream.BytesPerFrame() * channels)
 
 		if frameCountMin > fillCount {
 			// Ring buffer does not have enough data, fill with zeroes.
@@ -348,7 +351,10 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 			for frame := 0; frame < frameCount; frame++ {
 				for ch := 0; ch < channelCount; ch++ {
 					buffer := areas.Buffer(ch, frame)
-					_, _ = ringBuffer.Read(buffer)
+					_, err = ringBuffer.Read(buffer)
+					if err != nil {
+						//	log.Printf("ringbuffer read error: %s", err)
+					}
 				}
 			}
 			err = stream.EndWrite()
@@ -370,7 +376,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		return fmt.Errorf("unable to open output device: %s", err)
 	}
 
-	capacity := int(latencySec * 2.0 * float64(instream.SampleRate()*instream.BytesPerFrame()))
+	capacity := channels * int(0.2*float64(instream.SampleRate()*instream.BytesPerFrame()))
 	log.Printf("capacity %d", capacity)
 	ringBuffer = rbuf.NewFixedSizeRingBuf(capacity)
 	_, _ = ringBuffer.Write(make([]byte, capacity))

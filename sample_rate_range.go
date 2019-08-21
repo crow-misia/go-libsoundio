@@ -11,42 +11,35 @@ package soundio
 #include <soundio/soundio.h>
 */
 import "C"
-import (
-	"sync/atomic"
-	"unsafe"
-)
+import "unsafe"
 
 type SampleRateRange struct {
-	ptr uintptr
+	min int
+	max int
 }
 
 // fields
 
 // Min returns sample rate minimal.
 func (r *SampleRateRange) Min() int {
-	p := r.pointer()
-	if p == nil {
+	if r == nil {
 		return 0
 	}
-	return int(p.min)
+	return r.min
 }
 
 // Max returns sample rate maximal.
 func (r *SampleRateRange) Max() int {
-	p := r.pointer()
-	if p == nil {
+	if r == nil {
 		return 0
 	}
-	return int(p.max)
+	return r.max
 }
 
-func (r *SampleRateRange) pointer() *C.struct_SoundIoSampleRateRange {
-	if r == nil {
-		return nil
+func newSampleRateRange(p uintptr) SampleRateRange {
+	r := (*C.struct_SoundIoSampleRateRange)(unsafe.Pointer(p))
+	return SampleRateRange{
+		min: int(r.min),
+		max: int(r.max),
 	}
-	p := atomic.LoadUintptr(&r.ptr)
-	if p == 0 {
-		return nil
-	}
-	return (*C.struct_SoundIoSampleRateRange)(unsafe.Pointer(p))
 }

@@ -11,118 +11,119 @@ package soundio
 #include <soundio/soundio.h>
 #include <stdlib.h>
 #include <string.h>
+
+extern void instreamReadCallbackDelegate(struct SoundIoInStream *, int, int);
+extern void instreamOverflowCallbackDelegate(struct SoundIoInStream *);
+extern void instreamErrorCallbackDelegate(struct SoundIoInStream *, int);
+
+static void setInStreamCallback(struct SoundIoInStream *instream) {
+	instream->read_callback = instreamReadCallbackDelegate;
+	instream->overflow_callback = instreamOverflowCallbackDelegate;
+	instream->error_callback = instreamErrorCallbackDelegate;
+}
 */
 import "C"
 import (
-	"sync/atomic"
+	"log"
 	"unsafe"
 )
 
 type InStream struct {
-	ptr              uintptr
-	device           *Device
+	p                uintptr
+	d                *Device
 	readCallback     func(*InStream, int, int)
 	overflowCallback func(*InStream)
 	errorCallback    func(*InStream, error)
+}
+
+//export instreamReadCallbackDelegate
+func instreamReadCallbackDelegate(nativeStream *C.struct_SoundIoInStream, frameCountMin C.int, frameCountMax C.int) {
+	stream := (*InStream)(nativeStream.userdata)
+	if stream.readCallback != nil {
+		stream.readCallback(stream, int(frameCountMin), int(frameCountMax))
+	}
+}
+
+//export instreamOverflowCallbackDelegate
+func instreamOverflowCallbackDelegate(nativeStream *C.struct_SoundIoInStream) {
+	stream := (*InStream)(nativeStream.userdata)
+	if stream.overflowCallback != nil {
+		stream.overflowCallback(stream)
+	}
+}
+
+//export instreamErrorCallbackDelegate
+func instreamErrorCallbackDelegate(nativeStream *C.struct_SoundIoInStream, err C.int) {
+	stream := (*InStream)(nativeStream.userdata)
+	if stream.errorCallback != nil {
+		stream.errorCallback(stream, convertToError(err))
+	}
 }
 
 // fields
 
 // Device returns device to which the stream belongs.
 func (s *InStream) Device() *Device {
-	return s.device
+	return s.d
 }
 
 // Format returns format of stream.
 func (s *InStream) Format() Format {
 	p := s.pointer()
-	if p == nil {
-		return FormatInvalid
-	}
 	return Format(p.format)
 }
 
 // SetFormat sets format of stream.
 func (s *InStream) SetFormat(format Format) {
 	p := s.pointer()
-	if p == nil {
-		return
-	}
 	p.format = uint32(format)
 }
 
 // SampleRate returns sample rate of stream.
 func (s *InStream) SampleRate() int {
 	p := s.pointer()
-	if p == nil {
-		return 0
-	}
 	return int(p.sample_rate)
 }
 
 // SetSampleRate sets sample rate of stream.
 func (s *InStream) SetSampleRate(sampleRate int) {
 	p := s.pointer()
-	if p == nil {
-		return
-	}
 	p.sample_rate = C.int(sampleRate)
 }
 
 // Layout returns layout of stream.
 func (s *InStream) Layout() *ChannelLayout {
 	p := s.pointer()
-	if p == nil {
-		return nil
-	}
 	return newChannelLayout(&p.layout)
 }
 
 // SetLayout sets layout of stream.
 func (s *InStream) SetLayout(layout *ChannelLayout) {
-	if layout == nil || layout.ptr == 0 {
-		return
-	}
 	p := s.pointer()
-	if p == nil {
-		return
-	}
-	C.memcpy(unsafe.Pointer(&p.layout), unsafe.Pointer(layout.ptr), C.sizeof_struct_SoundIoChannelLayout)
+	C.memcpy(unsafe.Pointer(&p.layout), unsafe.Pointer(layout.p), C.sizeof_struct_SoundIoChannelLayout)
 }
 
 // SoftwareLatency returns software latency of stream.
 func (s *InStream) SoftwareLatency() float64 {
 	p := s.pointer()
-	if p == nil {
-		return 0.0
-	}
 	return float64(p.software_latency)
 }
 
 // SetSoftwareLatency sets software latency of stream.
 func (s *InStream) SetSoftwareLatency(latency float64) {
 	p := s.pointer()
-	if p == nil {
-		return
-	}
 	p.software_latency = C.double(latency)
 }
 
 // Name returns name of stream.
 func (s *InStream) Name() string {
 	p := s.pointer()
-	if p == nil {
-		return ""
-	}
 	return C.GoString(p.name)
 }
 
 // SetName sets name of stream.
 func (s *InStream) SetName(name string) {
 	p := s.pointer()
-	if p == nil {
-		return
-	}
 	if p.name != nil {
 		C.free(unsafe.Pointer(p.name))
 	}
@@ -134,27 +135,18 @@ func (s *InStream) SetName(name string) {
 // passed on or made available to another stream. Defaults to `false`.
 func (s *InStream) NonTerminalHint() bool {
 	p := s.pointer()
-	if p == nil {
-		return false
-	}
 	return bool(p.non_terminal_hint)
 }
 
 // BytesPerFrame returns bytes per frame.
 func (s *InStream) BytesPerFrame() int {
 	p := s.pointer()
-	if p == nil {
-		return 0
-	}
 	return int(p.bytes_per_frame)
 }
 
 // BytesPerSample returns bytes per sample.
 func (s *InStream) BytesPerSample() int {
 	p := s.pointer()
-	if p == nil {
-		return 0
-	}
 	return int(p.bytes_per_sample)
 }
 
@@ -163,9 +155,6 @@ func (s *InStream) BytesPerSample() int {
 // * SoundIoErrorIncompatibleDevice
 func (s *InStream) LayoutError() error {
 	p := s.pointer()
-	if p == nil {
-		return errorUninitialized
-	}
 	return convertToError(p.layout_error)
 }
 
@@ -185,15 +174,6 @@ func (s *InStream) SetErrorCallback(callback func(stream *InStream, err error)) 
 }
 
 // functions
-
-// Destroy releases resources.
-func (s *InStream) Destroy() {
-	ptr := atomic.SwapUintptr(&s.ptr, 0)
-	if ptr != 0 {
-		p := (*C.struct_SoundIoInStream)(unsafe.Pointer(ptr))
-		C.soundio_instream_destroy(p)
-	}
-}
 
 // Open opens stream.
 // After you call this function, SoftwareLatency is set to the correct value.
@@ -215,29 +195,29 @@ func (s *InStream) Destroy() {
 // * ErrorIncompatibleDevice
 func (s *InStream) Open() error {
 	p := s.pointer()
-	if p == nil {
-		return errorUninitialized
-	}
 	return convertToError(C.soundio_instream_open(p))
+}
+
+// Destroy releases resources.
+func (s *InStream) Destroy() {
+	log.Println("destroy Destroy")
+	p := s.pointer()
+	if p != nil {
+		C.soundio_instream_destroy(p)
+		s.p = 0
+	}
 }
 
 // Start starts recording.
 // After you call this function, ReadCallback will be called.
 func (s *InStream) Start() error {
 	p := s.pointer()
-	if p == nil {
-		return errorUninitialized
-	}
 	return convertToError(C.soundio_instream_start(p))
 }
 
 // BeginRead called when you are ready to begin reading from the device buffer.
 func (s *InStream) BeginRead(frameCount *int) (*ChannelAreas, error) {
 	p := s.pointer()
-	if p == nil {
-		return nil, errorUninitialized
-	}
-
 	var ptrs *C.struct_SoundIoChannelArea
 	nativeFrameCount := C.int(*frameCount)
 	err := convertToError(C.soundio_instream_begin_read(p, &ptrs, &nativeFrameCount))
@@ -254,9 +234,6 @@ func (s *InStream) BeginRead(frameCount *int) (*ChannelAreas, error) {
 // EndRead will drop all of the frames from when you called.
 func (s *InStream) EndRead() error {
 	p := s.pointer()
-	if p == nil {
-		return errorUninitialized
-	}
 	return convertToError(C.soundio_instream_end_read(p))
 }
 
@@ -264,9 +241,6 @@ func (s *InStream) EndRead() error {
 // If the underlying device supports pausing.
 func (s *InStream) Pause(pause bool) error {
 	p := s.pointer()
-	if p == nil {
-		return errorUninitialized
-	}
 	return convertToError(C.soundio_instream_pause(p, C.bool(pause)))
 }
 
@@ -275,18 +249,25 @@ func (s *InStream) Pause(pause bool) error {
 // represented in the buffer.
 // This includes both software and hardware latency.
 func (s *InStream) Latency() (float64, error) {
+	p := s.pointer()
 	var latency C.double
-	err := convertToError(C.soundio_instream_get_latency(s.pointer(), &latency))
+	err := convertToError(C.soundio_instream_get_latency(p, &latency))
 	return float64(latency), err
 }
 
+func newInStream(p *C.struct_SoundIoInStream, d *Device) *InStream {
+	s := &InStream{
+		p: uintptr(unsafe.Pointer(p)),
+		d: d,
+	}
+	p.userdata = unsafe.Pointer(s)
+	C.setInStreamCallback(p)
+	return s
+}
+
 func (s *InStream) pointer() *C.struct_SoundIoInStream {
-	if s == nil {
+	if s.p == 0 {
 		return nil
 	}
-	p := atomic.LoadUintptr(&s.ptr)
-	if p == 0 {
-		return nil
-	}
-	return (*C.struct_SoundIoInStream)(unsafe.Pointer(p))
+	return (*C.struct_SoundIoInStream)(unsafe.Pointer(s.p))
 }
