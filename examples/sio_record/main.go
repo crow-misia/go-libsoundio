@@ -4,6 +4,7 @@
  * This file is part of libsoundio, which is MIT licensed.
  * See http://opensource.org/licenses/MIT
  */
+
 package main
 
 import (

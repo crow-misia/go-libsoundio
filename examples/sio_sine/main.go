@@ -4,6 +4,7 @@
  * This file is part of libsoundio, which is MIT licensed.
  * See http://opensource.org/licenses/MIT
  */
+
 package main
 
 import (
@@ -21,8 +22,6 @@ import (
 
 var exitCode = 0
 var secondsOffset = 0.0
-
-const PI = 3.1415926535
 
 func main() {
 	ctx := context.Background()
@@ -137,7 +136,7 @@ func realMain(ctx context.Context) error {
 			}
 
 			pitch := 440.0
-			radiansPerSecond := pitch * 2.0 * PI
+			radiansPerSecond := pitch * 2.0 * math.Pi
 			channelCount := layout.ChannelCount()
 
 			for frame := 0; frame < frameCount; frame++ {
