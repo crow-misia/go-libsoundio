@@ -149,24 +149,16 @@ func listDevices(s *soundio.SoundIo, shortOutput bool) {
 
 	log.Println("--------Input Devices--------")
 	for i := 0; i < inputCount; i++ {
-		device, err := s.InputDevice(i)
-		if err != nil {
-			log.Print(err)
-		} else {
-			printDevice(device, shortOutput, defaultInput == i)
-			device.RemoveReference()
-		}
+		device := s.InputDevice(i)
+		printDevice(device, shortOutput, defaultInput == i)
+		device.RemoveReference()
 	}
 
 	log.Println("--------Output Devices--------")
 	for i := 0; i < outputCount; i++ {
-		device, err := s.OutputDevice(i)
-		if err != nil {
-			log.Print(err)
-		} else {
-			printDevice(device, shortOutput, defaultOutput == i)
-			device.RemoveReference()
-		}
+		device := s.OutputDevice(i)
+		printDevice(device, shortOutput, defaultOutput == i)
+		device.RemoveReference()
 	}
 
 	log.Println()
@@ -175,7 +167,6 @@ func listDevices(s *soundio.SoundIo, shortOutput bool) {
 
 func realMain(ctx context.Context, backend soundio.Backend, watchEvents bool, shortOutput bool) error {
 	s := soundio.Create()
-	defer s.Destroy()
 
 	var err error
 	if backend == soundio.BackendNone {

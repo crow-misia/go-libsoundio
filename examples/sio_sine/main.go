@@ -54,7 +54,6 @@ func realMain(ctx context.Context) error {
 	log.Printf("Channel Layout Builtin Count = %d", soundio.ChannelLayoutBuiltinCount())
 
 	s := soundio.Create()
-	defer s.Destroy()
 
 	log.Printf("App Name = %s", s.AppName())
 	s.SetAppName("FugaHoge")
@@ -85,10 +84,7 @@ func realMain(ctx context.Context) error {
 	defaultOutputDeviceIndex := s.DefaultOutputDeviceIndex()
 	log.Printf("Default Output Device Index = %d", defaultOutputDeviceIndex)
 
-	device, err := s.OutputDevice(defaultOutputDeviceIndex)
-	if err != nil {
-		return err
-	}
+	device := s.OutputDevice(defaultOutputDeviceIndex)
 	defer device.RemoveReference()
 
 	log.Println("Device")

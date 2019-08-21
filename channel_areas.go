@@ -11,7 +11,9 @@ package soundio
 #include <soundio/soundio.h>
 */
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+)
 
 type ChannelAreas struct {
 	areas        []*ChannelArea

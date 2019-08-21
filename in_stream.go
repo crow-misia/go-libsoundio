@@ -245,6 +245,9 @@ func (s *InStream) BeginRead(frameCount *int) (*ChannelAreas, error) {
 	if err != nil {
 		return nil, err
 	}
+	if ptrs == nil {
+		return nil, nil
+	}
 	return newChannelAreas(ptrs, s.Layout().ChannelCount(), *frameCount), nil
 }
 

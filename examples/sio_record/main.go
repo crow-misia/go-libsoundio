@@ -110,16 +110,12 @@ func parseBackend(str string) (soundio.Backend, error) {
 	}
 }
 
-func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCount func(io *soundio.SoundIo) int, getDefaultIndex func(io *soundio.SoundIo) int, getDevice func(io *soundio.SoundIo, index int) (*soundio.Device, error)) (*soundio.Device, error) {
+func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCount func(io *soundio.SoundIo) int, getDefaultIndex func(io *soundio.SoundIo) int, getDevice func(io *soundio.SoundIo, index int) *soundio.Device) (*soundio.Device, error) {
 	var selectedDevice *soundio.Device
-	var err error
 	if len(deviceId) > 0 {
 		count := getDeviceCount(s)
 		for i := 0; i < count; i++ {
-			device, err := getDevice(s, i)
-			if err != nil {
-				return nil, err
-			}
+			device := getDevice(s, i)
 			if device.Raw() == isRaw && deviceId == device.ID() {
 				selectedDevice = device
 				break
@@ -131,10 +127,7 @@ func selectDevice(s *soundio.SoundIo, deviceId string, isRaw bool, getDeviceCoun
 		}
 	} else {
 		deviceIndex := getDefaultIndex(s)
-		selectedDevice, err = getDevice(s, deviceIndex)
-		if err != nil {
-			return nil, err
-		}
+		selectedDevice = getDevice(s, deviceIndex)
 		if selectedDevice == nil {
 			return nil, errors.New("no input devices available")
 		}
@@ -147,7 +140,6 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 	defer cancelParent()
 
 	s := soundio.Create()
-	defer s.Destroy()
 
 	var err error
 	if backend == soundio.BackendNone {
@@ -165,7 +157,7 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 		return io.InputDeviceCount()
 	}, func(io *soundio.SoundIo) int {
 		return io.DefaultInputDeviceIndex()
-	}, func(io *soundio.SoundIo, index int) (*soundio.Device, error) {
+	}, func(io *soundio.SoundIo, index int) *soundio.Device {
 		return io.InputDevice(index)
 	})
 	if err != nil {
