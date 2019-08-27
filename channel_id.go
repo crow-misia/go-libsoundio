@@ -17,6 +17,7 @@ import "unsafe"
 // ChannelID is channel id.
 type ChannelID uint32
 
+// ChannelID enumeration.
 const (
 	ChannelIDInvalid          = ChannelID(C.SoundIoChannelIdInvalid)
 	ChannelIDFrontLeft        = ChannelID(C.SoundIoChannelIdFrontLeft)

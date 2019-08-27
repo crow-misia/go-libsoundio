@@ -7,12 +7,11 @@
 
 package soundio
 
-/*
-#include <soundio/soundio.h>
-*/
+// #include "soundio.h"
 import "C"
 import "unsafe"
 
+// SampleRateRange contains SampleRate Min, Max.
 type SampleRateRange struct {
 	min int
 	max int
@@ -21,18 +20,12 @@ type SampleRateRange struct {
 // fields
 
 // Min returns sample rate minimal.
-func (r *SampleRateRange) Min() int {
-	if r == nil {
-		return 0
-	}
+func (r SampleRateRange) Min() int {
 	return r.min
 }
 
 // Max returns sample rate maximal.
-func (r *SampleRateRange) Max() int {
-	if r == nil {
-		return 0
-	}
+func (r SampleRateRange) Max() int {
 	return r.max
 }
 

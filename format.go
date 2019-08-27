@@ -15,6 +15,7 @@ import "C"
 // Format is audio format.
 type Format uint32
 
+// Format enumeration.
 const (
 	FormatInvalid   = Format(C.SoundIoFormatInvalid)
 	FormatS8        = Format(C.SoundIoFormatS8)        // Signed 8 bit

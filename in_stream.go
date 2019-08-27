@@ -8,29 +8,17 @@
 package soundio
 
 /*
-#include <soundio/soundio.h>
+#include "soundio.h"
 #include <stdlib.h>
 #include <string.h>
-
-extern void instreamReadCallbackDelegate(struct SoundIoInStream *, int, int);
-extern void instreamOverflowCallbackDelegate(struct SoundIoInStream *);
-extern void instreamErrorCallbackDelegate(struct SoundIoInStream *, int);
-
-static void setInStreamCallback(struct SoundIoInStream *instream) {
-	instream->read_callback = instreamReadCallbackDelegate;
-	instream->overflow_callback = instreamOverflowCallbackDelegate;
-	instream->error_callback = instreamErrorCallbackDelegate;
-}
 */
 import "C"
-import (
-	"log"
-	"unsafe"
-)
+import "unsafe"
 
+// InStream is Input Stream.
 type InStream struct {
 	p                uintptr
-	d                *Device
+	d                Device
 	readCallback     func(*InStream, int, int)
 	overflowCallback func(*InStream)
 	errorCallback    func(*InStream, error)
@@ -63,67 +51,67 @@ func instreamErrorCallbackDelegate(nativeStream *C.struct_SoundIoInStream, err C
 // fields
 
 // Device returns device to which the stream belongs.
-func (s *InStream) Device() *Device {
+func (s *InStream) Device() Device {
 	return s.d
 }
 
 // Format returns format of stream.
 func (s *InStream) Format() Format {
-	p := s.pointer()
+	p := s.cptr()
 	return Format(p.format)
 }
 
 // SetFormat sets format of stream.
 func (s *InStream) SetFormat(format Format) {
-	p := s.pointer()
+	p := s.cptr()
 	p.format = uint32(format)
 }
 
 // SampleRate returns sample rate of stream.
 func (s *InStream) SampleRate() int {
-	p := s.pointer()
+	p := s.cptr()
 	return int(p.sample_rate)
 }
 
 // SetSampleRate sets sample rate of stream.
 func (s *InStream) SetSampleRate(sampleRate int) {
-	p := s.pointer()
+	p := s.cptr()
 	p.sample_rate = C.int(sampleRate)
 }
 
 // Layout returns layout of stream.
 func (s *InStream) Layout() *ChannelLayout {
-	p := s.pointer()
+	p := s.cptr()
 	return newChannelLayout(&p.layout)
 }
 
 // SetLayout sets layout of stream.
 func (s *InStream) SetLayout(layout *ChannelLayout) {
-	p := s.pointer()
-	C.memcpy(unsafe.Pointer(&p.layout), unsafe.Pointer(layout.p), C.sizeof_struct_SoundIoChannelLayout)
+	p := s.cptr()
+	C.memcpy(unsafe.Pointer(&p.layout), unsafe.Pointer(layout.cptr()), C.sizeof_struct_SoundIoChannelLayout)
 }
 
 // SoftwareLatency returns software latency of stream.
 func (s *InStream) SoftwareLatency() float64 {
-	p := s.pointer()
+	p := s.cptr()
 	return float64(p.software_latency)
 }
 
 // SetSoftwareLatency sets software latency of stream.
 func (s *InStream) SetSoftwareLatency(latency float64) {
-	p := s.pointer()
+	p := s.cptr()
 	p.software_latency = C.double(latency)
 }
 
 // Name returns name of stream.
 func (s *InStream) Name() string {
-	p := s.pointer()
+	p := s.cptr()
 	return C.GoString(p.name)
 }
 
 // SetName sets name of stream.
 func (s *InStream) SetName(name string) {
-	p := s.pointer()
+	p := s.cptr()
 	if p.name != nil {
 		C.free(unsafe.Pointer(p.name))
 	}
@@ -134,19 +122,19 @@ func (s *InStream) SetName(name string) {
 // This is used by JACK and it means that the data received by the stream will be
 // passed on or made available to another stream. Defaults to `false`.
 func (s *InStream) NonTerminalHint() bool {
-	p := s.pointer()
+	p := s.cptr()
 	return bool(p.non_terminal_hint)
 }
 
 // BytesPerFrame returns bytes per frame.
 func (s *InStream) BytesPerFrame() int {
-	p := s.pointer()
+	p := s.cptr()
 	return int(p.bytes_per_frame)
 }
 
 // BytesPerSample returns bytes per sample.
 func (s *InStream) BytesPerSample() int {
-	p := s.pointer()
+	p := s.cptr()
 	return int(p.bytes_per_sample)
 }
 
@@ -154,7 +142,7 @@ func (s *InStream) BytesPerSample() int {
 // Possible error:
 // * SoundIoErrorIncompatibleDevice
 func (s *InStream) LayoutError() error {
-	p := s.pointer()
+	p := s.cptr()
 	return convertToError(p.layout_error)
 }
 
@@ -194,14 +182,12 @@ func (s *InStream) SetErrorCallback(callback func(stream *InStream, err error)) 
 // * ErrorIncompatibleBackend
 // * ErrorIncompatibleDevice
 func (s *InStream) Open() error {
-	p := s.pointer()
-	return convertToError(C.soundio_instream_open(p))
+	return convertToError(C.soundio_instream_open(s.cptr()))
 }
 
 // Destroy releases resources.
 func (s *InStream) Destroy() {
-	log.Println("destroy Destroy")
-	p := s.pointer()
+	p := s.cptr()
 	if p != nil {
 		C.soundio_instream_destroy(p)
 		s.p = 0
@@ -211,13 +197,13 @@ func (s *InStream) Destroy() {
 // Start starts recording.
 // After you call this function, ReadCallback will be called.
 func (s *InStream) Start() error {
-	p := s.pointer()
+	p := s.cptr()
 	return convertToError(C.soundio_instream_start(p))
 }
 
 // BeginRead called when you are ready to begin reading from the device buffer.
 func (s *InStream) BeginRead(frameCount *int) (*ChannelAreas, error) {
-	p := s.pointer()
+	p := s.cptr()
 	var ptrs *C.struct_SoundIoChannelArea
 	nativeFrameCount := C.int(*frameCount)
 	err := convertToError(C.soundio_instream_begin_read(p, &ptrs, &nativeFrameCount))
@@ -233,14 +219,14 @@ func (s *InStream) BeginRead(frameCount *int) (*ChannelAreas, error) {
 
 // EndRead will drop all of the frames from when you called.
 func (s *InStream) EndRead() error {
-	p := s.pointer()
+	p := s.cptr()
 	return convertToError(C.soundio_instream_end_read(p))
 }
 
 // Pause pauses the stream and prevents ReadCallback from being called
 // If the underlying device supports pausing.
 func (s *InStream) Pause(pause bool) error {
-	p := s.pointer()
+	p := s.cptr()
 	return convertToError(C.soundio_instream_pause(p, C.bool(pause)))
 }
 
@@ -249,13 +235,13 @@ func (s *InStream) Pause(pause bool) error {
 // represented in the buffer.
 // This includes both software and hardware latency.
 func (s *InStream) Latency() (float64, error) {
-	p := s.pointer()
+	p := s.cptr()
 	var latency C.double
 	err := convertToError(C.soundio_instream_get_latency(p, &latency))
 	return float64(latency), err
 }
 
-func newInStream(p *C.struct_SoundIoInStream, d *Device) *InStream {
+func newInStream(p *C.struct_SoundIoInStream, d Device) *InStream {
 	s := &InStream{
 		p: uintptr(unsafe.Pointer(p)),
 		d: d,
@@ -265,7 +251,7 @@ func newInStream(p *C.struct_SoundIoInStream, d *Device) *InStream {
 	return s
 }
 
-func (s *InStream) pointer() *C.struct_SoundIoInStream {
+func (s *InStream) cptr() *C.struct_SoundIoInStream {
 	if s.p == 0 {
 		return nil
 	}

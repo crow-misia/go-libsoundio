@@ -16,6 +16,7 @@ import (
 	"unsafe"
 )
 
+// ChannelArea contain sound data.
 type ChannelArea struct {
 	buffer []byte
 	step   int

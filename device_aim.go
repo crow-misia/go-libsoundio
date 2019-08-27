@@ -15,6 +15,7 @@ import "C"
 // DeviceAim is device aim.
 type DeviceAim uint32
 
+// DeviceAim enumeration.
 const (
 	DeviceAimInput  = DeviceAim(C.SoundIoDeviceAimInput)  // capture / recording
 	DeviceAimOutput = DeviceAim(C.SoundIoDeviceAimOutput) // playback

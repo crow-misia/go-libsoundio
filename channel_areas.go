@@ -15,6 +15,7 @@ import (
 	"unsafe"
 )
 
+// ChannelAreas contain channel datas.
 type ChannelAreas struct {
 	areas        []*ChannelArea
 	channelCount int

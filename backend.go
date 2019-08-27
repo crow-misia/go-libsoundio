@@ -12,9 +12,10 @@ package soundio
 */
 import "C"
 
-// Backend type
+// Backend type.
 type Backend uint32
 
+// Backend enumeration.
 const (
 	BackendNone       = Backend(C.SoundIoBackendNone)       // None
 	BackendJack       = Backend(C.SoundIoBackendJack)       // Jack
@@ -33,10 +34,5 @@ func (b Backend) String() string {
 
 // Have returns whether libsoundio was compiled with backend.
 func (b Backend) Have() bool {
-	return HaveBackend(b)
-}
-
-// HaveBackend returns whether libsoundio was compiled with backend.
-func HaveBackend(backend Backend) bool {
-	return bool(C.soundio_have_backend(uint32(backend)))
+	return bool(C.soundio_have_backend(uint32(b)))
 }

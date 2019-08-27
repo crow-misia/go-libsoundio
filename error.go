@@ -11,12 +11,11 @@ package soundio
 #include <soundio/soundio.h>
 */
 import "C"
-import "errors"
 
 // Error is libsoundio error.
 type Error int
 
-// libsoundio error
+// Error enumeration.
 const (
 	ErrorNone                = Error(C.SoundIoErrorNone)
 	ErrorNoMem               = Error(C.SoundIoErrorNoMem)            // Out of memory
@@ -39,8 +38,6 @@ const (
 func (e Error) Error() string {
 	return C.GoString(C.soundio_strerror(C.int(e)))
 }
-
-var errorUninitialized = errors.New("libsoundio uninitialized")
 
 func convertToError(err C.int) error {
 	if err == C.SoundIoErrorNone {

@@ -10,22 +10,11 @@ package soundio
 
 /*
 #cgo LDFLAGS: -lsoundio -lm
-#include <soundio/soundio.h>
+#include "soundio.h"
 #include <stdlib.h>
-
-extern void soundioOnDevicesChange(struct SoundIo *);
-extern void soundioOnBackendDisconnect(struct SoundIo *, int);
-extern void soundioOnEventsSignal(struct SoundIo *);
-
-static void setSoundIoCallback(struct SoundIo *io) {
-	io->on_devices_change = soundioOnDevicesChange;
-	io->on_backend_disconnect = soundioOnBackendDisconnect;
-	io->on_events_signal = soundioOnEventsSignal;
-}
 */
 import "C"
 import (
-	"log"
 	"runtime"
 	"unsafe"
 )
@@ -35,6 +24,7 @@ const (
 	MaxChannels int = C.SOUNDIO_MAX_CHANNELS
 )
 
+// SoundIo is used for selecting and initializing the relevant backends.
 type SoundIo struct {
 	ptr                 *C.struct_SoundIo
 	appNamePtr          unsafe.Pointer
@@ -148,7 +138,6 @@ func Create() *SoundIo {
 
 // destroySoundIo releases resources.
 func destroySoundIo(s *SoundIo) {
-	log.Println("destroy SoundIO")
 	if s.appNamePtr != nil {
 		C.free(unsafe.Pointer(s.appNamePtr))
 		s.ptr = nil
