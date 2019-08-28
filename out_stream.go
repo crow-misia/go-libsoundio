@@ -13,10 +13,7 @@ package soundio
 #include <string.h>
 */
 import "C"
-import (
-	"log"
-	"unsafe"
-)
+import "unsafe"
 
 // OutStream is Output Stream.
 type OutStream struct {
@@ -205,7 +202,6 @@ func (s *OutStream) Open() error {
 
 // Destroy releases resources.
 func (s *OutStream) Destroy() {
-	log.Println("destroy OutStream")
 	p := s.cptr()
 	if p != nil {
 		C.soundio_outstream_destroy(p)
