@@ -167,46 +167,27 @@ func listDevices(s *soundio.SoundIo, shortOutput bool) {
 }
 
 func realMain(ctx context.Context, backend soundio.Backend, watchEvents bool, shortOutput bool) error {
-	s := soundio.Create()
-
-	var err error
-	if backend == soundio.BackendNone {
-		err = s.Connect()
-	} else {
-		err = s.ConnectBackend(backend)
+	opts := make([]soundio.Option, 0)
+	opts = append(opts, soundio.WithBackend(backend))
+	if watchEvents {
+		opts = append(opts, soundio.WithOnDevicesChange(func(s *soundio.SoundIo) {
+			log.Println("devices changed")
+			listDevices(s, shortOutput)
+		}))
 	}
+
+	s := soundio.Create(opts...)
+
+	err := s.Connect()
 	if err != nil {
 		return err
 	}
 
 	if watchEvents {
-		s.SetOnDevicesChange(func(s *soundio.SoundIo) {
-			log.Println("devices changed")
-			listDevices(s, shortOutput)
-		})
-
-		go func() {
-			for {
-				select {
-				case <-ctx.Done():
-					break
-				default:
-					s.WaitEvents()
-				}
-			}
-		}()
-
-		for {
-			select {
-			case <-ctx.Done():
-				s.Wakeup()
-				return ctx.Err()
-			}
-		}
-	} else {
-		s.FlushEvents()
-		listDevices(s, shortOutput)
+		return s.WaitEvents(ctx)
 	}
+	s.FlushEvents()
+	listDevices(s, shortOutput)
 
 	return nil
 }

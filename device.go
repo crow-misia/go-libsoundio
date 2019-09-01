@@ -213,17 +213,49 @@ func (d *Device) NearestSampleRate(sampleRate int) int {
 }
 
 // NewInStream allocates memory and sets defaults.
-// Next you should fill out the struct fields and then call Open function.
-// Sets all fields to defaults.
-func (d *Device) NewInStream() *InStream {
-	return newInStream(C.soundio_instream_create(d.cptr()), *d)
+// After you call this function, SoftwareLatency is set to the correct value.
+// The next thing to do is call Start function.
+// If this function returns an error, the instream is in an invalid state and
+// you must call Destroy function on it.
+//
+// Possible errors:
+// * ErrorInvalid
+//   device aim is not DeviceAimInput
+//   format is not valid
+//   requested layout channel count > MaxChannels
+// * ErrorOpeningDevice
+// * IoErrorNoMem
+// * ErrorBackendDisconnected
+// * ErrorSystemResources
+// * ErrorNoSuchClient
+// * ErrorIncompatibleBackend
+// * ErrorIncompatibleDevice
+func (d *Device) NewInStream(config *InStreamConfig) (*InStream, error) {
+	return newInStream(d, config)
 }
 
 // NewOutStream allocates memory and sets defaults.
-// Next you should fill out the struct fields and then call Open function.
-// Sets all fields to defaults.
-func (d *Device) NewOutStream() *OutStream {
-	return newOutStream(C.soundio_outstream_create(d.cptr()), *d)
+// After you call this function, SoftwareLatency is set to the correct value.
+// The next thing to do is call Start function.
+// If this function returns an error, the outstream is in an invalid state and
+// you must call Destroy function on it.
+//
+// Possible errors:
+// * ErrorInvalid
+//   device aim is not DeviceAimOutput
+//   format is not valid
+//   requested layout channel count > MaxChannels
+// * ErrorNoMem
+// * ErrorOpeningDevice
+// * ErrorBackendDisconnected
+// * ErrorSystemResources
+// * ErrorNoSuchClient - when JACK returns `JackNoSuchClient`
+// * ErrorIncompatibleBackend - SoundIoOutStream::channel_count is
+//   greater than the number of channels the backend can handle.
+// * ErrorIncompatibleDevice - stream parameters requested are not
+//   compatible with the chosen device.
+func (d *Device) NewOutStream(config *OutStreamConfig) (*OutStream, error) {
+	return newOutStream(d, config)
 }
 
 func (d Device) cptr() *C.struct_SoundIoDevice {

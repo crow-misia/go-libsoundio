@@ -139,19 +139,12 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 	_, cancelParent := context.WithCancel(ctx)
 	defer cancelParent()
 
-	s := soundio.Create()
+	s := soundio.Create(soundio.WithBackend(backend))
 
-	var err error
-	if backend == soundio.BackendNone {
-		err = s.Connect()
-	} else {
-		err = s.ConnectBackend(backend)
-	}
+	err := s.Connect()
 	if err != nil {
 		return err
 	}
-
-	s.FlushEvents()
 
 	selectedInputDevice, err := selectDevice(s, inputDeviceId, inputIsRaw, func(io *soundio.SoundIo) int {
 		return io.InputDeviceCount()
@@ -219,12 +212,18 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 
 	var ringBuffer *rbuf.FixedSizeRingBuf
 
-	instream := selectedInputDevice.NewInStream()
+	inConfig := &soundio.InStreamConfig{
+		Format:          format,
+		Layout:          layout,
+		SampleRate:      sampleRate,
+		SoftwareLatency: latencySec,
+	}
+	instream, err := selectedInputDevice.NewInStream(inConfig)
+	if err != nil {
+		return fmt.Errorf("unable to open input device: %s", err)
+	}
 	defer instream.Destroy()
-	instream.SetFormat(format)
-	instream.SetLayout(layout)
-	instream.SetSampleRate(sampleRate)
-	instream.SetSoftwareLatency(latencySec)
+
 	instream.SetReadCallback(func(stream *soundio.InStream, frameCountMin int, frameCountMax int) {
 		frameBytes := layout.ChannelCount() * instream.BytesPerFrame()
 		freeBytes := ringBuffer.N - ringBuffer.Readable
@@ -280,22 +279,25 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		overflowCount++
 		log.Printf("overflow %d", overflowCount)
 	})
-	err = instream.Open()
-	if err != nil {
-		return fmt.Errorf("unable to open input device: %s", err)
-	}
 
-	outstream := selectedOutputDevice.NewOutStream()
+	outConfig := &soundio.OutStreamConfig{
+		Format:          format,
+		Layout:          layout,
+		SampleRate:      sampleRate,
+		SoftwareLatency: latencySec,
+	}
+	outstream, err := selectedOutputDevice.NewOutStream(outConfig)
+	if err != nil {
+		return fmt.Errorf("unable to open output device: %s", err)
+	}
 	defer outstream.Destroy()
+
 	log.Printf("format: %s", format)
 	log.Printf("layout name: %s", layout.Name())
 	log.Printf("layout channel count: %d", channels)
 	log.Printf("sample rate: %d", sampleRate)
 	log.Printf("latency seconds: %f sec", latencySec)
-	outstream.SetFormat(format)
-	outstream.SetLayout(layout)
-	outstream.SetSampleRate(sampleRate)
-	outstream.SetSoftwareLatency(latencySec)
+
 	outstream.SetWriteCallback(func(stream *soundio.OutStream, frameCountMin int, frameCountMax int) {
 		channelCount := stream.Layout().ChannelCount()
 
@@ -372,10 +374,6 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 		underflowCount++
 		log.Printf("underflow %d", underflowCount)
 	})
-	err = outstream.Open()
-	if err != nil {
-		return fmt.Errorf("unable to open output device: %s", err)
-	}
 
 	capacity := channels * int(0.2*float64(instream.SampleRate()*instream.BytesPerFrame()))
 	log.Printf("capacity %d", capacity)
@@ -393,24 +391,7 @@ func realMain(ctx context.Context, backend soundio.Backend, inputDeviceId string
 
 	log.Println("Type CTRL+C to quit by killing process...")
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				break
-			default:
-				s.WaitEvents()
-			}
-		}
-	}()
-
-	for {
-		select {
-		case <-ctx.Done():
-			s.Wakeup()
-			return ctx.Err()
-		}
-	}
+	return s.WaitEvents(ctx)
 }
 
 func signalContext(ctx context.Context) context.Context {

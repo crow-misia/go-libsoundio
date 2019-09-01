@@ -89,8 +89,9 @@ func (l *ChannelLayout) ChannelCount() int {
 // Channels returns list of channelID.
 func (l *ChannelLayout) Channels() []ChannelID {
 	p := l.cptr()
-	channels := make([]ChannelID, MaxChannels)
-	for i := 0; i < MaxChannels; i++ {
+	count := int(p.channel_count)
+	channels := make([]ChannelID, count)
+	for i := 0; i < count; i++ {
 		channels[i] = ChannelID(uint32(p.channels[i]))
 	}
 	return channels

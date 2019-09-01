@@ -52,16 +52,13 @@ func realMain(ctx context.Context) error {
 	log.Printf("Channel Max Count = %d", soundio.MaxChannels)
 	log.Printf("Channel Layout Builtin Count = %d", soundio.ChannelLayoutBuiltinCount())
 
-	s := soundio.Create()
+	s := soundio.Create(soundio.WithAppName("FugaHoge"))
 
 	log.Printf("App Name = %s", s.AppName())
-	s.SetAppName("FugaHoge")
-	log.Printf("Changed App Name = %s", s.AppName())
 
 	backendCount := s.BackendCount()
 	log.Printf("Backend Count = %d", backendCount)
-	for i := 0; i < backendCount; i++ {
-		backend := s.Backend(i)
+	for i, backend := range backends {
 		log.Printf("Backend Index(%d) = %d (%s)", i, backend, backend)
 	}
 
@@ -74,8 +71,6 @@ func realMain(ctx context.Context) error {
 	for _, b := range backends {
 		log.Printf("Have %s = %t", b, b.Have())
 	}
-
-	s.FlushEvents()
 
 	defaultInputDeviceIndex := s.DefaultInputDeviceIndex()
 	log.Printf("Default Input Device Index = %d", defaultInputDeviceIndex)
@@ -113,9 +108,28 @@ func realMain(ctx context.Context) error {
 	log.Printf("  Ref Count = %d", device.RefCount())
 	log.Printf("  Probe Error = %s", device.ProbeError())
 
-	outStream := device.NewOutStream()
-	outStream.SetFormat(soundio.FormatFloat32LE)
-	log.Println("  OutStream")
+	layout := device.CurrentLayout()
+	log.Printf("    Layout Name = %s", layout.Name())
+	log.Printf("    Layout Detect Builtin = %t", layout.DetectBuiltin())
+
+	channels := layout.Channels()
+	channelCount := layout.ChannelCount()
+	log.Printf("    Channel Count = %d", channelCount)
+	log.Println("    Channels")
+	for _, channel := range channels {
+		log.Printf("      Channel ID = %d, Name = %s", channel, channel)
+	}
+
+	config := &soundio.OutStreamConfig{
+		Format: soundio.FormatFloat32LE,
+		Layout: layout,
+	}
+	outStream, err := device.NewOutStream(config)
+	if err != nil {
+		return fmt.Errorf("error opening: %s", err)
+	}
+	defer outStream.Destroy()
+
 	outStream.SetWriteCallback(func(stream *soundio.OutStream, frameCountMix int, frameCountMax int) {
 		layout := stream.Layout()
 		sampleRate := float64(stream.SampleRate())
@@ -151,7 +165,7 @@ func realMain(ctx context.Context) error {
 
 			secondsOffset = math.Mod(secondsOffset+secondsPerFrame*float64(frameCount), 1.0)
 
-			err = outStream.EndWrite()
+			err = stream.EndWrite()
 			if err != nil {
 				log.Println(err)
 				cancelParent()
@@ -160,17 +174,7 @@ func realMain(ctx context.Context) error {
 		}
 	})
 
-	layout := device.CurrentLayout()
-	outStream.SetLayout(layout)
 	log.Printf("    Layout Error = %s", outStream.LayoutError())
-	log.Printf("    Layout Name = %s", layout.Name())
-	log.Printf("    Layout Detect Builtin = %t", layout.DetectBuiltin())
-
-	err = outStream.Open()
-	if err != nil {
-		return fmt.Errorf("error opening: %s", err)
-	}
-	defer outStream.Destroy()
 
 	log.Printf("    Name = %s", outStream.Name())
 	log.Printf("    BytePerFrame = %d", outStream.BytesPerSample())
@@ -180,37 +184,13 @@ func realMain(ctx context.Context) error {
 	log.Printf("    Format = %s", outStream.Format())
 	log.Printf("    Volume = %f", outStream.Volume())
 	log.Printf("    NonTerminalHint = %t", outStream.NonTerminalHint())
-	log.Printf("    Channel Count = %d", layout.ChannelCount())
-	log.Println("    Channels")
-	channels := layout.Channels()
-	channelCount := layout.ChannelCount()
-	for i := 0; i < channelCount; i++ {
-		log.Printf("      Channel ID = %d, Name = %s", channels[i], channels[i])
-	}
 
 	err = outStream.Start()
 	if err != nil {
 		return fmt.Errorf("error opening: %s", err)
 	}
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				break
-			default:
-				s.WaitEvents()
-			}
-		}
-	}()
-
-	for {
-		select {
-		case <-ctx.Done():
-			s.Wakeup()
-			return ctx.Err()
-		}
-	}
+	return s.WaitEvents(ctx)
 }
 
 func signalContext(ctx context.Context) context.Context {

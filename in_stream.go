@@ -13,15 +13,31 @@ package soundio
 #include <string.h>
 */
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+)
 
 // InStream is Input Stream.
 type InStream struct {
 	p                uintptr
-	d                Device
+	d                *Device
 	readCallback     func(*InStream, int, int)
 	overflowCallback func(*InStream)
 	errorCallback    func(*InStream, error)
+}
+
+// InStreamConfig is config of input stream.
+type InStreamConfig struct {
+	// Format
+	Format Format
+	// SampleRate
+	SampleRate int
+	// Layout
+	Layout *ChannelLayout
+	// SoftwareLatency
+	SoftwareLatency float64
+	// Name
+	Name string
 }
 
 //export instreamReadCallbackDelegate
@@ -51,7 +67,7 @@ func instreamErrorCallbackDelegate(nativeStream *C.struct_SoundIoInStream, err C
 // fields
 
 // Device returns device to which the stream belongs.
-func (s *InStream) Device() Device {
+func (s *InStream) Device() *Device {
 	return s.d
 }
 
@@ -61,22 +77,10 @@ func (s *InStream) Format() Format {
 	return Format(p.format)
 }
 
-// SetFormat sets format of stream.
-func (s *InStream) SetFormat(format Format) {
-	p := s.cptr()
-	p.format = uint32(format)
-}
-
 // SampleRate returns sample rate of stream.
 func (s *InStream) SampleRate() int {
 	p := s.cptr()
 	return int(p.sample_rate)
-}
-
-// SetSampleRate sets sample rate of stream.
-func (s *InStream) SetSampleRate(sampleRate int) {
-	p := s.cptr()
-	p.sample_rate = C.int(sampleRate)
 }
 
 // Layout returns layout of stream.
@@ -85,37 +89,16 @@ func (s *InStream) Layout() *ChannelLayout {
 	return newChannelLayout(&p.layout)
 }
 
-// SetLayout sets layout of stream.
-func (s *InStream) SetLayout(layout *ChannelLayout) {
-	p := s.cptr()
-	C.memcpy(unsafe.Pointer(&p.layout), unsafe.Pointer(layout.cptr()), C.sizeof_struct_SoundIoChannelLayout)
-}
-
 // SoftwareLatency returns software latency of stream.
 func (s *InStream) SoftwareLatency() float64 {
 	p := s.cptr()
 	return float64(p.software_latency)
 }
 
-// SetSoftwareLatency sets software latency of stream.
-func (s *InStream) SetSoftwareLatency(latency float64) {
-	p := s.cptr()
-	p.software_latency = C.double(latency)
-}
-
 // Name returns name of stream.
 func (s *InStream) Name() string {
 	p := s.cptr()
 	return C.GoString(p.name)
-}
-
-// SetName sets name of stream.
-func (s *InStream) SetName(name string) {
-	p := s.cptr()
-	if p.name != nil {
-		C.free(unsafe.Pointer(p.name))
-	}
-	p.name = C.CString(name)
 }
 
 // NonTerminalHint returns hint that this input stream is nonterminal.
@@ -163,32 +146,11 @@ func (s *InStream) SetErrorCallback(callback func(stream *InStream, err error)) 
 
 // functions
 
-// Open opens stream.
-// After you call this function, SoftwareLatency is set to the correct value.
-// The next thing to do is call Start function.
-// If this function returns an error, the instream is in an invalid state and
-// you must call Destroy function on it.
-//
-// Possible errors:
-// * ErrorInvalid
-//   device aim is not DeviceAimInput
-//   format is not valid
-//   requested layout channel count > MaxChannels
-// * ErrorOpeningDevice
-// * IoErrorNoMem
-// * ErrorBackendDisconnected
-// * ErrorSystemResources
-// * ErrorNoSuchClient
-// * ErrorIncompatibleBackend
-// * ErrorIncompatibleDevice
-func (s *InStream) Open() error {
-	return convertToError(C.soundio_instream_open(s.cptr()))
-}
-
 // Destroy releases resources.
 func (s *InStream) Destroy() {
 	p := s.cptr()
 	if p != nil {
+		C.free(unsafe.Pointer(p.name))
 		C.soundio_instream_destroy(p)
 		s.p = 0
 	}
@@ -241,14 +203,42 @@ func (s *InStream) Latency() (float64, error) {
 	return float64(latency), err
 }
 
-func newInStream(p *C.struct_SoundIoInStream, d Device) *InStream {
+func newInStream(d *Device, config *InStreamConfig) (*InStream, error) {
+	p := C.soundio_instream_create(d.cptr())
 	s := &InStream{
 		p: uintptr(unsafe.Pointer(p)),
 		d: d,
 	}
+
 	p.userdata = unsafe.Pointer(s)
 	C.setInStreamCallback(p)
-	return s
+
+	// set config values
+	if config.Format != FormatInvalid {
+		p.format = uint32(config.Format)
+	}
+	if config.SampleRate > 0 {
+		p.sample_rate = C.int(config.SampleRate)
+	}
+	if config.Layout != nil {
+		C.memcpy(unsafe.Pointer(&p.layout), unsafe.Pointer(config.Layout.cptr()), C.sizeof_struct_SoundIoChannelLayout)
+	}
+	if config.SoftwareLatency > 0.0 {
+		p.software_latency = C.double(config.SoftwareLatency)
+	}
+	if config.Name == "" {
+		p.name = C.CString("SoundIoInStream")
+	} else {
+		p.name = C.CString(config.Name)
+	}
+
+	err := convertToError(C.soundio_instream_open(p))
+	if err != nil {
+		C.soundio_instream_destroy(p)
+		return nil, err
+	}
+
+	return s, nil
 }
 
 func (s *InStream) cptr() *C.struct_SoundIoInStream {

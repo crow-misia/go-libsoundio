@@ -140,19 +140,12 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 	_, cancelParent := context.WithCancel(ctx)
 	defer cancelParent()
 
-	s := soundio.Create()
+	s := soundio.Create(soundio.WithBackend(backend))
 
-	var err error
-	if backend == soundio.BackendNone {
-		err = s.Connect()
-	} else {
-		err = s.ConnectBackend(backend)
-	}
+	err := s.Connect()
 	if err != nil {
 		return err
 	}
-
-	s.FlushEvents()
 
 	selectedDevice, err := selectDevice(s, deviceId, isRaw, func(io *soundio.SoundIo) int {
 		return io.InputDeviceCount()
@@ -205,11 +198,19 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 	defer file.Close()
 
 	var ringBuffer *rbuf.FixedSizeRingBuf
-	instream := selectedDevice.NewInStream()
+
+	config := &soundio.InStreamConfig{
+		Format:     format,
+		SampleRate: sampleRate,
+	}
+	instream, err := selectedDevice.NewInStream(config)
+	if err != nil {
+		return fmt.Errorf("unable to open input device: %s", err)
+	}
 	defer instream.Destroy()
-	instream.SetFormat(format)
-	instream.SetSampleRate(sampleRate)
+
 	frameBytes := instream.Layout().ChannelCount() * instream.BytesPerFrame()
+
 	instream.SetReadCallback(func(stream *soundio.InStream, frameCountMin int, frameCountMax int) {
 		freeBytes := ringBuffer.N - ringBuffer.Readable
 		freeCount := freeBytes / frameBytes
@@ -263,10 +264,6 @@ func realMain(ctx context.Context, backend soundio.Backend, deviceId string, isR
 		overflowCount++
 		log.Printf("overflow %d", overflowCount)
 	})
-	err = instream.Open()
-	if err != nil {
-		return fmt.Errorf("unable to open input device: %s", err)
-	}
 
 	capacity := instream.Layout().ChannelCount() * ringBufferDurationSeconds * 5 * instream.SampleRate() * instream.BytesPerFrame()
 	ringBuffer = rbuf.NewFixedSizeRingBuf(capacity)

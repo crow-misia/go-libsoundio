@@ -15,22 +15,24 @@ package soundio
 */
 import "C"
 import (
+	"context"
 	"runtime"
 	"unsafe"
 )
 
 const (
-	// MaxChannels is suppor channel max count.
+	// MaxChannels is support channel max count.
 	MaxChannels int = C.SOUNDIO_MAX_CHANNELS
 )
 
 // SoundIo is used for selecting and initializing the relevant backends.
 type SoundIo struct {
+	backend             Backend
 	ptr                 *C.struct_SoundIo
-	appNamePtr          unsafe.Pointer
-	onDevicesChange     func(io *SoundIo)
-	onBackendDisconnect func(io *SoundIo, err error)
-	onEventsSignal      func(io *SoundIo)
+	appName             string
+	onDevicesChange     func(*SoundIo)
+	onBackendDisconnect func(*SoundIo, error)
+	onEventsSignal      func(*SoundIo)
 }
 
 //export soundioOnDevicesChange
@@ -67,20 +69,6 @@ func (s *SoundIo) CurrentBackend() Backend {
 // AppName returns application name.
 func (s *SoundIo) AppName() string {
 	return C.GoString(s.ptr.app_name)
-}
-
-// SetAppName sets application name.
-// PulseAudio uses this for "application name".
-// JACK uses this for `client_name`.
-// Must not contain a colon (":").
-func (s *SoundIo) SetAppName(name string) {
-	newPtr := C.CString(name)
-	oldPtr := s.appNamePtr
-	if oldPtr != nil {
-		C.free(oldPtr)
-	}
-	s.appNamePtr = unsafe.Pointer(newPtr)
-	s.ptr.app_name = newPtr
 }
 
 // functions
@@ -124,58 +112,51 @@ func BytesPerSecond(format Format, channelCount int, sampleRate int) int {
 }
 
 // Create a SoundIo context. You may create multiple instances of this to connect to multiple backends. Sets all fields to defaults.
-func Create() *SoundIo {
+func Create(opts ...Option) *SoundIo {
 	ptr := C.soundio_create()
 	io := &SoundIo{
-		ptr: ptr,
+		backend: BackendNone,
+		ptr:     ptr,
+		appName: "SoundIo",
 	}
 	ptr.userdata = unsafe.Pointer(io)
 	C.setSoundIoCallback(ptr)
 
+	for _, opt := range opts {
+		opt(io)
+	}
+	io.ptr.app_name = C.CString(io.appName)
+
 	runtime.SetFinalizer(io, destroySoundIo)
+
 	return io
 }
 
 // destroySoundIo releases resources.
 func destroySoundIo(s *SoundIo) {
-	if s.appNamePtr != nil {
-		C.free(unsafe.Pointer(s.appNamePtr))
-		s.ptr = nil
-	}
 	if s.ptr != nil {
+		C.free(unsafe.Pointer(s.ptr.app_name))
 		C.soundio_destroy(s.ptr)
 		s.ptr = nil
 	}
-}
-
-// fields
-
-// SetOnDevicesChange is onDeviceChange callback setter.
-func (s *SoundIo) SetOnDevicesChange(callback func(*SoundIo)) {
-	s.onDevicesChange = callback
-}
-
-// SetOnBackendDisconnect is onBackendDisconnect callback setter.
-func (s *SoundIo) SetOnBackendDisconnect(callback func(*SoundIo, error)) {
-	s.onBackendDisconnect = callback
-}
-
-// SetOnEventsSignal is onEventsSignal callback setter.
-func (s *SoundIo) SetOnEventsSignal(callback func(*SoundIo)) {
-	s.onEventsSignal = callback
 }
 
 // functions
 
 // Connect tries to connect on all available backends in order.
 func (s *SoundIo) Connect() error {
-	return convertToError(C.soundio_connect(s.ptr))
-}
+	var err error
+	if s.backend == BackendNone {
+		err = convertToError(C.soundio_connect(s.ptr))
+	} else {
+		err = convertToError(C.soundio_connect_backend(s.ptr, uint32(s.backend)))
+	}
 
-// ConnectBackend connect to backend.
-// Instead of calling Connect function you may call this function to try a specific backend.
-func (s *SoundIo) ConnectBackend(backend Backend) error {
-	return convertToError(C.soundio_connect_backend(s.ptr, uint32(backend)))
+	if err == nil {
+		s.FlushEvents()
+	}
+
+	return err
 }
 
 // Disconnect disconnect from backend.
@@ -198,15 +179,29 @@ func (s *SoundIo) FlushEvents() {
 	C.soundio_flush_events(s.ptr)
 }
 
-// WaitEvents calls FlushEvents then blocks until another event
-// is ready or you call Wakeup. Be ready for spurious wakeups.
-func (s *SoundIo) WaitEvents() {
-	C.soundio_wait_events(s.ptr)
-}
+// WaitEvents calls FlushEvents then blocks until context canceled.
+func (s *SoundIo) WaitEvents(ctx context.Context) error {
+	go func() {
+		select {
+		case <-ctx.Done():
+			if s.CurrentBackend() != BackendNone {
+				C.soundio_wakeup(s.ptr)
+			}
+		}
+	}()
 
-// Wakeup makes WaitEvents stop blocking.
-func (s *SoundIo) Wakeup() {
-	C.soundio_wakeup(s.ptr)
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if s.CurrentBackend() != BackendNone {
+				C.soundio_wait_events(s.ptr)
+			} else {
+				return ctx.Err()
+			}
+		}
+	}
 }
 
 // ForceDeviceScan rescan device If necessary.
