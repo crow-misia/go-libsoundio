@@ -12,7 +12,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	soundio "github.com/crow-misia/go-libsoundio"
+	soundio "github.com/zhjy8827/go-libsoundio"
 	"github.com/glycerine/rbuf"
 	"log"
 	"os"

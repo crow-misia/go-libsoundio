@@ -12,7 +12,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	soundio "github.com/crow-misia/go-libsoundio"
+	soundio "github.com/zhjy8827/go-libsoundio"
 	"github.com/glycerine/rbuf"
 	"log"
 	"os"
@@ -66,7 +66,7 @@ func main() {
 	flag.StringVar(&deviceId, "device", "", "id")
 	flag.StringVar(&backend, "backend", "", "dummy|alsa|pulseaudio|jack|coreaudio|wasapi")
 	flag.BoolVar(&isRaw, "raw", false, "raw")
-	flag.StringVar(&outfile, "file", "", "filename")
+	flag.StringVar(&outfile, "file", "test.pcm", "filename")
 	flag.Parse()
 
 	enumBackend, err := parseBackend(backend)

@@ -11,7 +11,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/crow-misia/go-libsoundio"
+	soundio "github.com/zhjy8827/go-libsoundio"
 	"log"
 	"math"
 	"os"
