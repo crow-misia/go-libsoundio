@@ -66,7 +66,7 @@ func main() {
 	flag.StringVar(&deviceId, "device", "", "id")
 	flag.StringVar(&backend, "backend", "", "dummy|alsa|pulseaudio|jack|coreaudio|wasapi")
 	flag.BoolVar(&isRaw, "raw", false, "raw")
-	flag.StringVar(&outfile, "file", "test.pcm", "filename")
+	flag.StringVar(&outfile, "file", "", "filename")
 	flag.Parse()
 
 	enumBackend, err := parseBackend(backend)
