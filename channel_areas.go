@@ -47,7 +47,7 @@ func newChannelAreas(ptr *C.struct_SoundIoChannelArea, chanelCount int, frameCou
 	areas := make([]*ChannelArea, chanelCount)
 
 	for ch := 0; ch < chanelCount; ch++ {
-		areas[ch] = newChannelArea(areasPtr, ch, frameCount)
+		areas[ch] = newChannelArea(areasPtr, ch, frameCount, chanelCount)
 	}
 
 	return &ChannelAreas{
