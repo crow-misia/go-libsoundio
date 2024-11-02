@@ -226,9 +226,7 @@ func newInStream(d *Device, config *InStreamConfig) (*InStream, error) {
 	if config.SoftwareLatency > 0.0 {
 		p.software_latency = C.double(config.SoftwareLatency)
 	}
-	if config.Name == "" {
-		p.name = C.CString("SoundIoInStream")
-	} else {
+	if config.Name != "" {
 		p.name = C.CString(config.Name)
 	}
 
