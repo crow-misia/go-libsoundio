@@ -11,7 +11,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/crow-misia/go-libsoundio"
+	soundio "github.com/crow-misia/go-libsoundio"
 	"log"
 	"math"
 	"os"
@@ -177,7 +177,7 @@ func realMain(ctx context.Context) error {
 	log.Printf("    Layout Error = %s", outStream.LayoutError())
 
 	log.Printf("    Name = %s", outStream.Name())
-	log.Printf("    BytePerFrame = %d", outStream.BytesPerSample())
+	log.Printf("    BytePerFrame = %d", outStream.BytesPerFrame())
 	log.Printf("    BytePerSample = %d", outStream.BytesPerSample())
 	log.Printf("    SoftwareLatency = %f", outStream.SoftwareLatency())
 	log.Printf("    SampleRate = %d", outStream.SampleRate())
