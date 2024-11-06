@@ -176,7 +176,7 @@ func (s *InStream) BeginRead(frameCount *int) (*ChannelAreas, error) {
 	if ptrs == nil {
 		return nil, nil
 	}
-	return newChannelAreas(ptrs, s.Layout().ChannelCount(), *frameCount), nil
+	return newChannelAreas(ptrs, s.Format(), s.Layout().ChannelCount(), *frameCount), nil
 }
 
 // EndRead will drop all of the frames from when you called.

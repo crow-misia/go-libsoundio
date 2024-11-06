@@ -40,14 +40,14 @@ func (a *ChannelAreas) Area(channel int) *ChannelArea {
 // Buffer returns ChannelArea buffer.
 func (a *ChannelAreas) Buffer(channel int, frame int) []byte {
 	return a.areas[channel].bufferWithFrame(frame)
-
 }
-func newChannelAreas(ptr *C.struct_SoundIoChannelArea, chanelCount int, frameCount int) *ChannelAreas {
+
+func newChannelAreas(ptr *C.struct_SoundIoChannelArea, format Format, chanelCount int, frameCount int) *ChannelAreas {
 	areasPtr := uintptr(unsafe.Pointer(ptr))
 	areas := make([]*ChannelArea, chanelCount)
 
 	for ch := 0; ch < chanelCount; ch++ {
-		areas[ch] = newChannelArea(areasPtr, ch, frameCount, chanelCount)
+		areas[ch] = newChannelArea(areasPtr, format, ch, frameCount)
 	}
 
 	return &ChannelAreas{

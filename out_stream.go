@@ -188,7 +188,7 @@ func (s *OutStream) BeginWrite(frameCount *int) (*ChannelAreas, error) {
 	if ptrs == nil {
 		return nil, nil
 	}
-	return newChannelAreas(ptrs, s.Layout().ChannelCount(), *frameCount), nil
+	return newChannelAreas(ptrs, s.Format(), s.Layout().ChannelCount(), *frameCount), nil
 }
 
 // EndWrite commits the write that you began with BeginWrite.
