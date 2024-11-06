@@ -18,9 +18,9 @@ import (
 
 // ChannelArea contain sound data.
 type ChannelArea struct {
-	buffer       []byte
-	step         int
-	channelCount int
+	buffer         []byte
+	step           int
+	bytesPerSample int
 }
 
 // fields
@@ -31,9 +31,8 @@ func (a *ChannelArea) Buffer() []byte {
 }
 
 func (a *ChannelArea) bufferWithFrame(frame int) []byte {
-	step := a.step / a.channelCount
 	offset := frame * a.step
-	return a.buffer[offset : offset+step]
+	return a.buffer[offset : offset+a.bytesPerSample]
 }
 
 // Step returns ow many bytes it takes to get from the beginning of one sample to
@@ -42,7 +41,7 @@ func (a *ChannelArea) Step() int {
 	return a.step
 }
 
-func newChannelArea(ptr uintptr, channel int, frameCount int, channelCount int) *ChannelArea {
+func newChannelArea(ptr uintptr, format Format, channel int, frameCount int) *ChannelArea {
 	size := C.sizeof_struct_SoundIoChannelArea
 	areaPtr := ptr + uintptr(channel*size)
 	area := (*C.struct_SoundIoChannelArea)(unsafe.Pointer(areaPtr))
@@ -57,8 +56,8 @@ func newChannelArea(ptr uintptr, channel int, frameCount int, channelCount int) 
 	buffer := *(*[]byte)(unsafe.Pointer(sh))
 
 	return &ChannelArea{
-		buffer:       buffer,
-		step:         areaStep,
-		channelCount: channelCount,
+		buffer:         buffer,
+		step:           areaStep,
+		bytesPerSample: BytesPerSample(format),
 	}
 }
