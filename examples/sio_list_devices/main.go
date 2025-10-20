@@ -11,12 +11,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	soundio "github.com/crow-misia/go-libsoundio"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	soundio "github.com/crow-misia/go-libsoundio"
 )
 
 var exitCode = 0
