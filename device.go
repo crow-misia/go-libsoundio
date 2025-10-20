@@ -219,17 +219,17 @@ func (d *Device) NearestSampleRate(sampleRate int) int {
 // you must call Destroy function on it.
 //
 // Possible errors:
-// * ErrorInvalid
-//   device aim is not DeviceAimInput
-//   format is not valid
-//   requested layout channel count > MaxChannels
-// * ErrorOpeningDevice
-// * IoErrorNoMem
-// * ErrorBackendDisconnected
-// * ErrorSystemResources
-// * ErrorNoSuchClient
-// * ErrorIncompatibleBackend
-// * ErrorIncompatibleDevice
+//   - ErrorInvalid
+//     device aim is not DeviceAimInput
+//     format is not valid
+//     requested layout channel count > MaxChannels
+//   - ErrorOpeningDevice
+//   - IoErrorNoMem
+//   - ErrorBackendDisconnected
+//   - ErrorSystemResources
+//   - ErrorNoSuchClient
+//   - ErrorIncompatibleBackend
+//   - ErrorIncompatibleDevice
 func (d *Device) NewInStream(config *InStreamConfig) (*InStream, error) {
 	return newInStream(d, config)
 }
@@ -241,19 +241,19 @@ func (d *Device) NewInStream(config *InStreamConfig) (*InStream, error) {
 // you must call Destroy function on it.
 //
 // Possible errors:
-// * ErrorInvalid
-//   device aim is not DeviceAimOutput
-//   format is not valid
-//   requested layout channel count > MaxChannels
-// * ErrorNoMem
-// * ErrorOpeningDevice
-// * ErrorBackendDisconnected
-// * ErrorSystemResources
-// * ErrorNoSuchClient - when JACK returns `JackNoSuchClient`
-// * ErrorIncompatibleBackend - SoundIoOutStream::channel_count is
-//   greater than the number of channels the backend can handle.
-// * ErrorIncompatibleDevice - stream parameters requested are not
-//   compatible with the chosen device.
+//   - ErrorInvalid
+//     device aim is not DeviceAimOutput
+//     format is not valid
+//     requested layout channel count > MaxChannels
+//   - ErrorNoMem
+//   - ErrorOpeningDevice
+//   - ErrorBackendDisconnected
+//   - ErrorSystemResources
+//   - ErrorNoSuchClient - when JACK returns `JackNoSuchClient`
+//   - ErrorIncompatibleBackend - SoundIoOutStream::channel_count is
+//     greater than the number of channels the backend can handle.
+//   - ErrorIncompatibleDevice - stream parameters requested are not
+//     compatible with the chosen device.
 func (d *Device) NewOutStream(config *OutStreamConfig) (*OutStream, error) {
 	return newOutStream(d, config)
 }
