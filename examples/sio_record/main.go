@@ -12,14 +12,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	soundio "github.com/crow-misia/go-libsoundio"
-	"github.com/glycerine/rbuf"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	soundio "github.com/crow-misia/go-libsoundio"
+	"github.com/glycerine/rbuf"
 )
 
 const ringBufferDurationSeconds = 30

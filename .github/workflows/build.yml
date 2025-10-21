@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     timeout-minutes: 30
@@ -32,6 +36,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
 
       - name: Install libsoundio
         run: |
@@ -42,9 +48,8 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Get dependencies
-        run: |
-          go get -v -t -d ./...
+      - name: Install Go dependencies
+        run: go get -t
 
       - name: Build
-        run: go build -v .
+        run: go build

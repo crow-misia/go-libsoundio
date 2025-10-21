@@ -1,2 +1,4 @@
 [tools]
 go = "latest"
+node = "24"
+pnpm = "latest"
