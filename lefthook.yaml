@@ -8,14 +8,16 @@ commit-msg:
   parallel: true
   commands:
     lint:
-      run: pnpm exec commitlint --edit {1}
+      run: |
+        CONFIG_PATH=$(mise where npm:@commitlint/config-conventional)/lib/node_modules/@commitlint/config-conventional/lib/index.js
+        mise exec -- commitlint --color false --extends "$CONFIG_PATH" --edit {1}
 
 pre-commit:
   parallel: false
   commands:
     gofmt:
       glob: "*.go"
-      run: gofmt -w {staged_files}
+      run: mise exec -- gofmt -w {staged_files}
       stage_fixed: true
       skip:
         - merge
@@ -23,7 +25,7 @@ pre-commit:
 
     goimports:
       glob: "*.go"
-      run: go tool goimports -w {staged_files}
+      run: mise exec -- go tool goimports -w {staged_files}
       stage_fixed: true
       skip:
         - merge
